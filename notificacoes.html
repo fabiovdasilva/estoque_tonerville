@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Notificações</h1>
+</div>
+<div class="card">
+    <div class="card-body">
+        {% if alertas %}
+            <div class="list-group">
+            {% for a in alertas %}
+                <div class="list-group-item list-group-item-{{ a.tipo }}">
+                    {{ a.msg }}
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted text-center py-4">Sem notificações no momento.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

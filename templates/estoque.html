@@ -1,0 +1,511 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* --- PADRÃO VISUAL --- */
+    .page-title { color: #2C3E50 !important; font-family: 'Segoe UI', sans-serif; font-weight: 700; margin-bottom: 5px; }
+    
+    /* Cards */
+    .card-overview { border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); color: white; }
+    .card-overview h2 { font-weight: 700; font-size: 2.2rem; margin: 0; }
+    
+    /* Filtros */
+    .filter-bar { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    
+    /* Tabela e Scroll (Limite de 10 Linhas) */
+    .card-table { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border-radius: 8px; }
+    
+    .table-scroll-10 {
+        max-height: 600px; 
+        overflow-y: auto;  
+        overflow-x: auto; 
+    }
+    .table-scroll-10::-webkit-scrollbar { width: 8px; height: 8px; }
+    .table-scroll-10::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    .table-scroll-10::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+    .table-scroll-10::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+    /* Cabeçalho Fixo */
+    .table thead th { 
+        position: sticky; 
+        top: 0; 
+        z-index: 2; 
+        background-color: #f8f9fa; 
+        color: #6c757d; 
+        font-weight: 700; 
+        font-size: 0.8rem; 
+        border-bottom: 2px solid #e9ecef; 
+        border-top: none; 
+        padding: 12px 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1); 
+    }
+    
+    .table tbody td { 
+        vertical-align: middle; 
+        color: #495057; 
+        font-size: 0.9rem; 
+        padding: 12px 15px; 
+        border-bottom: 1px solid #f5f5f5; 
+    }
+    .table-hover tbody tr:hover { background-color: #fafafa; }
+
+    /* Alertas Visuais */
+    .product-critical { background-color: #fff5f5 !important; border-left: 4px solid #e74c3c !important; }
+    .product-low { background-color: #fff8e1 !important; border-left: 4px solid #f39c12 !important; }
+    .product-critical td:first-child, .product-low td:first-child { padding-left: 15px; }
+
+    /* Badges */
+    .badge-pill { padding: 5px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.3px; }
+    .badge-soft-success { background-color: rgba(39, 174, 96, 0.1); color: #27ae60; border: 1px solid rgba(39, 174, 96, 0.2); }
+    .badge-soft-danger { background-color: rgba(231, 76, 60, 0.1); color: #c0392b; border: 1px solid rgba(231, 76, 60, 0.2); }
+    .badge-soft-warning { background-color: rgba(243, 156, 18, 0.1); color: #d35400; border: 1px solid rgba(243, 156, 18, 0.2); }
+
+    /* Modal */
+    .section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #adb5bd; margin-bottom: 10px; display: block; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+</style>
+
+<div id="estoque-page" class="page-content active">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Controle de Estoque</h1>
+                <p class="page-subtitle mb-0">Gerencie seus produtos e insumos</p>
+            </div>
+            <div>
+                <button class="btn btn-primary btn-action shadow-sm me-2" onclick="abrirModalCadastro()">
+                    <i class="fas fa-plus me-2"></i> Novo Produto
+                </button>
+                <button class="btn btn-warning text-white btn-action shadow-sm" data-bs-toggle="modal" data-bs-target="#ajusteEstoqueModal">
+                    <i class="fas fa-exchange-alt me-2"></i> Ajuste
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4 g-3">
+        <div class="col-md-6">
+            <div class="card card-overview bg-primary h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="text-white text-uppercase mb-0 fw-bold" style="opacity: 0.8;">Visão Geral</h6>
+                        <i class="fas fa-chart-pie fa-2x" style="opacity: 0.5;"></i>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-6 border-end border-white-50">
+                            <h2>{{ total_itens_estoque }}</h2>
+                            <small>Itens Totais</small>
+                        </div>
+                        <div class="col-6">
+                            <h2>{{ valor_total_estoque | currency }}</h2>
+                            <small>Valor em Estoque</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card card-table h-100">
+                <div class="card-header bg-white border-bottom-0 pt-3 pb-2">
+                    <h6 class="mb-0 text-primary fw-bold"><i class="fas fa-fire me-2"></i> Top 5 Saídas</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 align-middle">
+                            <thead class="bg-light"><tr><th class="ps-3">PRODUTO</th><th>MARCA</th><th class="text-center pe-3">QTD</th></tr></thead>
+                            <tbody>
+                                {% for item in top_saidas %}
+                                <tr>
+                                    <td class="ps-3">{{ item.nome }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ item.marca }}</span></td>
+                                    <td class="text-center fw-bold pe-3">{{ item.total }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="text-center text-muted py-3 small">Sem movimentações recentes.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted fw-bold">Buscar Produto</label>
+                <input type="text" class="form-control" id="filtroBusca" placeholder="Nome, Marca ou Código..." onkeyup="filtrarTabela()">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted fw-bold">Marca</label>
+                <select class="form-select" id="filtroMarca" onchange="filtrarTabela()">
+                    <option value="">Todas</option>
+                    {% for m in marcas %}
+                        <option value="{{ m }}">{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="checkDisp" onchange="filtrarTabela()">
+                    <label class="form-check-label small text-muted" for="checkDisp">Apenas Disponíveis (>0)</label>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary w-100" onclick="limparFiltros()" title="Limpar"><i class="fas fa-redo"></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card card-table">
+        <div class="card-header bg-white py-3">
+            <h5 class="card-title mb-0" style="font-size: 1rem;">Inventário Atual</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive table-scroll-10">
+                <table class="table table-hover mb-0 align-middle" id="tabelaEstoque">
+                    <thead>
+                        <tr>
+                            <th width="80" class="ps-4">CÓDIGO</th>
+                            <th>PRODUTO</th>
+                            <th>MARCA</th>
+                            <th>CATEGORIA</th>
+                            <th class="text-center">ESTOQUE</th>
+                            <th class="text-end">CUSTO UNIT.</th>
+                            <th class="text-end" style="background-color: #fcfcfc;">TOTAL (CUSTO)</th>
+                            <th>ÚLTIMA MOV.</th>
+                            <th>STATUS</th>
+                            <th width="120" class="text-end pe-4">AÇÕES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyEstoque">
+                        {% for produto in produtos %}
+                            {% set limite_atencao = produto.minimo * (1 + config.margem_atencao_pct / 100) %}
+                            {% set row_class = '' %}
+                            {% set badge_html = '<span class="badge-pill badge-soft-success">Normal</span>' %}
+                            
+                            {% if produto.quantidade <= produto.minimo %}
+                                {% set row_class = 'product-critical' %}
+                                {% set badge_html = '<span class="badge-pill badge-soft-danger">Crítico</span>' %}
+                            {% elif produto.quantidade <= limite_atencao %}
+                                {% set row_class = 'product-low' %}
+                                {% set badge_html = '<span class="badge-pill badge-soft-warning">Baixo</span>' %}
+                            {% endif %}
+
+                        <tr class="{{ row_class }}" data-marca="{{ produto.marca }}" data-qtd="{{ produto.quantidade }}">
+                            <td class="ps-4 fw-bold text-muted">{{ produto.id | formata_codigo }}</td>
+                            <td>
+                                <div class="fw-bold text-dark nome-produto">{{ produto.nome }}</div>
+                                <small class="text-muted d-block text-truncate" style="max-width: 250px;">{{ produto.compatibilidade }}</small>
+                            </td>
+                            <td class="text-muted small marca-produto">{{ produto.marca }}</td>
+                            <td>{{ produto.categoria }}</td>
+                            <td class="text-center">
+                                <span class="fw-bold fs-6">{{ produto.quantidade }}</span>
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">Mín: {{ produto.minimo }}</small>
+                            </td>
+                            <td class="text-end">
+                                <div class="text-muted small">{{ produto.valor_pago | currency }}</div>
+                            </td>
+                            
+                            <td class="text-end fw-bold text-dark" style="background-color: #fcfcfc;">
+                                {{ (produto.quantidade * produto.valor_pago) | currency }}
+                            </td>
+
+                            <td>
+                                {% if produto.ultima_movimentacao %}
+                                    <span class="small text-muted">{{ produto.ultima_movimentacao.data.strftime('%d/%m/%Y') }}</span>
+                                {% else %} <span class="small text-muted">-</span> {% endif %}
+                            </td>
+                            <td>{{ badge_html|safe }}</td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <button class="btn btn-sm btn-light text-primary" 
+                                        type="button"
+                                        data-id="{{ produto.id }}"
+                                        data-nome="{{ produto.nome }}"
+                                        data-marca="{{ produto.marca }}"
+                                        data-categoria="{{ produto.categoria }}"
+                                        data-compatibilidade="{{ produto.compatibilidade }}"
+                                        data-minimo="{{ produto.minimo }}"
+                                        data-venda="{{ '%.2f'|format(produto.valor_venda)|replace('.', ',') }}"
+                                        data-obs="{{ produto.observacao }}"
+                                        onclick="abrirEdicao(this)" 
+                                        title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    
+                                    <a href="{{ url_for('excluir_produto', id=produto.id) }}" 
+                                       class="btn btn-sm btn-light text-danger" 
+                                       onclick="return confirm('ATENÇÃO: Deseja excluir? O estoque deve estar zerado.')"
+                                       title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr id="sem-resultados"><td colspan="10" class="text-center p-5 text-muted">Nenhum produto encontrado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-table mt-4">
+        <div class="card-header bg-white py-3"><h5 class="card-title mb-0" style="font-size: 1rem;">Histórico Recente</h5></div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-hover mb-0 small">
+                    <thead class="bg-light"><tr><th class="ps-4">DATA</th><th>TIPO</th><th>PRODUTO</th><th>QTD</th><th>ORIGEM/DESTINO</th><th>DETALHES</th><th class="pe-4 text-end">AÇÃO</th></tr></thead>
+                    <tbody>
+                        {% for mov in historico %}
+                        <tr class="{% if mov.status == 'Cancelado' %}table-danger{% endif %}">
+                            <td class="ps-4">{{ mov.data.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                {% if mov.status == 'Cancelado' %}
+                                    <span class="badge bg-danger">CANCELADO</span>
+                                {% else %}
+                                    {% if mov.tipo == 'Entrada' %} <span class="badge bg-primary">Entrada</span>
+                                    {% elif mov.tipo == 'Venda' %} <span class="badge bg-success">Venda</span>
+                                    {% elif mov.tipo == 'Saida_Locacao' %} <span class="badge bg-info">Locação</span>
+                                    {% else %} <span class="badge bg-warning text-dark">Ajuste</span> {% endif %}
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ mov.produto.nome }}</strong></td>
+                            <td class="fw-bold">{{ mov.quantidade }}</td>
+                            <td>{{ mov.destino_origem }}</td>
+                            <td>
+                                {% if mov.tipo == 'Entrada' %}<span class="text-success fw-bold">Custo: {{ mov.valor_unitario_entrada | currency }}</span>{% endif %}
+                                <span class="text-muted d-block text-truncate" style="max-width: 200px;">{{ mov.observacao }}</span>
+                                {% if mov.status == 'Cancelado' %}
+                                    <div class="text-danger fw-bold small mt-1"><i class="fas fa-info-circle"></i> {{ mov.justificativa_cancelamento }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                {% if mov.status != 'Cancelado' %}
+                                    {% if mov.tipo == 'Entrada' %}
+                                    <button class="btn btn-sm btn-light text-warning" 
+                                        type="button"
+                                        data-id="{{ mov.id }}"
+                                        data-qtd="{{ mov.quantidade }}"
+                                        data-valor="{{ '%.2f'|format(mov.valor_unitario_entrada)|replace('.', ',') }}"
+                                        onclick="editarEntrada(this)" 
+                                        title="Corrigir Valor">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-light text-danger" onclick="abrirModalCancelar('{{ mov.id }}')" title="Cancelar">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="novoProdutoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Novo Produto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('criar_produto') }}" method="POST">
+                <div class="modal-body bg-light">
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <span class="section-title">Informações Básicas</span>
+                            <div class="row g-3">
+                                <div class="col-md-6"><label class="form-label small text-muted fw-bold">Nome</label><input type="text" class="form-control" name="nome" required></div>
+                                <div class="col-md-3"><label class="form-label small text-muted fw-bold">Marca</label><input type="text" class="form-control" name="marca"></div>
+                                <div class="col-md-3"><label class="form-label small text-muted fw-bold">Categoria</label><select class="form-select" name="categoria"><option>Toner</option><option>Cilindro</option><option>Peças</option><option>Impressora</option><option>Outros</option></select></div>
+                                <div class="col-12"><label class="form-label small text-muted fw-bold">Compatibilidade</label><input type="text" class="form-control" name="compatibilidade"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <span class="section-title">Valores e Estoque</span>
+                            <div class="row g-3">
+                                <div class="col-md-4"><label class="form-label small text-muted fw-bold">Estoque Inicial</label><input type="number" class="form-control bg-light" name="quantidade" value="0" readonly><div class="form-text small">Inicia zerado por segurança.</div></div>
+                                <div class="col-md-4"><label class="form-label small text-muted fw-bold">Mínimo</label><input type="number" class="form-control" name="minimo" value="5"></div>
+                                <div class="col-md-4"><label class="form-label small text-muted fw-bold">Venda (R$)</label><input type="text" class="form-control" name="valor_venda" placeholder="0,00"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card border-0 shadow-sm"><div class="card-body"><span class="section-title">Observações</span><textarea class="form-control border-0 bg-light" name="observacao" rows="2"></textarea></div></div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light"><button type="submit" class="btn btn-primary px-4">Cadastrar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="ajusteEstoqueModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark"><h5 class="modal-title">Ajuste Manual</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('ajustar_estoque') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label small fw-bold">Produto</label><select class="form-select" name="produto_id" required><option value="" disabled selected>Selecione...</option>{% for p in produtos %}<option value="{{ p.id }}">{{ p.nome }} (Atual: {{ p.quantidade }})</option>{% endfor %}</select></div>
+                    <div class="row mb-3"><div class="col-6"><label class="form-label small fw-bold">Tipo</label><select class="form-select" name="tipo_ajuste" id="tipoAjusteSelect" onchange="toggleCamposEntrada()"><option value="Entrada">Entrada (+)</option><option value="Saida">Saída (-)</option></select></div><div class="col-6"><label class="form-label small fw-bold">Qtd</label><input type="number" class="form-control" name="quantidade" min="1" required></div></div>
+                    <div id="camposEntrada" class="p-3 bg-light rounded mb-3 border"><h6 class="text-primary border-bottom pb-2 mb-3 small fw-bold">Detalhes Entrada</h6><div class="mb-3"><label class="form-label small">Origem</label><select class="form-select" name="origem_tipo" id="origemTipoSelect" onchange="toggleNF()"><option value="NF">Nota Fiscal</option><option value="Ajuste">Ajuste Simples</option></select></div><div class="mb-3" id="divNF"><label class="form-label small">Nº NF</label><input type="text" class="form-control" name="numero_documento"></div><div class="mb-3"><label class="form-label small">Fornecedor</label><input type="text" class="form-control" name="fornecedor"></div><div class="mb-3"><label class="form-label small fw-bold text-success">Custo Unit. (R$)</label><input type="text" class="form-control" name="valor_pago" placeholder="0,00"></div></div>
+                    <div class="mb-3"><label class="form-label small">Motivo</label><textarea class="form-control" name="observacao_ajuste" rows="2"></textarea></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-warning w-100">Confirmar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editarProdutoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light"><h5 class="modal-title text-primary">Editar Produto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('editar_produto') }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="produto_id" id="edit_id">
+                    <div class="row mb-3"><div class="col-md-6"><label class="form-label small fw-bold">Nome</label><input type="text" class="form-control" name="nome" id="edit_nome" required></div><div class="col-md-3"><label class="form-label small fw-bold">Marca</label><input type="text" class="form-control" name="marca" id="edit_marca"></div><div class="col-md-3"><label class="form-label small fw-bold">Categoria</label><select class="form-select" name="categoria" id="edit_categoria"><option>Toner</option><option>Cilindro</option><option>Peças</option><option>Impressora</option><option>Outros</option></select></div></div>
+                    <div class="row mb-3"><div class="col-md-8"><label class="form-label small fw-bold">Compatibilidade</label><input type="text" class="form-control" name="compatibilidade" id="edit_comp"></div><div class="col-md-4"><label class="form-label small fw-bold">Mínimo</label><input type="number" class="form-control" name="minimo" id="edit_min"></div></div>
+                    <div class="row mb-3"><div class="col-md-4"><label class="form-label small fw-bold">Venda (R$)</label><input type="text" class="form-control" name="valor_venda" id="edit_venda"></div><div class="col-md-8"><label class="form-label small fw-bold">Obs</label><input type="text" class="form-control" name="observacao" id="edit_obs"></div></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Salvar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditarEntrada" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark"><h5 class="modal-title">Corrigir Entrada</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('editar_entrada') }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="movimentacao_id" id="edit_mov_id">
+                    <div class="alert alert-warning small">Atenção: Isso recalculará o custo médio.</div>
+                    <div class="mb-3"><label>Qtd Correta</label><input type="number" name="nova_qtd" id="edit_mov_qtd" class="form-control" required></div>
+                    <div class="mb-3"><label>Valor Unit. Correto (R$)</label><input type="text" name="novo_valor" id="edit_mov_valor" class="form-control" required></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-warning">Salvar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCancelarMov" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white"><h5 class="modal-title">Cancelar Movimentação</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('cancelar_movimentacao') }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="movimentacao_id" id="cancel_mov_id">
+                    <p class="fw-bold">Deseja realmente cancelar esta movimentação?</p>
+                    <p class="small text-muted">O estoque será revertido automaticamente.</p>
+                    <div class="mb-3"><label class="form-label">Justificativa</label><textarea name="justificativa" class="form-control" required></textarea></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-danger">Confirmar Cancelamento</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleCamposEntrada() {
+        var tipo = document.getElementById("tipoAjusteSelect").value;
+        document.getElementById("camposEntrada").style.display = (tipo === "Entrada") ? "block" : "none";
+    }
+    
+    function toggleNF() {
+        var origem = document.getElementById("origemTipoSelect").value;
+        document.getElementById("divNF").style.display = (origem === "NF") ? "block" : "none";
+    }
+
+    var modalCadastro = new bootstrap.Modal(document.getElementById('novoProdutoModal'));
+    var modalEdicao = new bootstrap.Modal(document.getElementById('editarProdutoModal'));
+    var modalEditEntrada = new bootstrap.Modal(document.getElementById('modalEditarEntrada'));
+    var modalCancelarMov = new bootstrap.Modal(document.getElementById('modalCancelarMov'));
+
+    function abrirModalCadastro() {
+        document.querySelector('#novoProdutoModal input[name="nome"]').value = "";
+        modalCadastro.show();
+    }
+
+    function abrirEdicao(btn) {
+        document.getElementById('edit_id').value = btn.getAttribute('data-id');
+        document.getElementById('edit_nome').value = btn.getAttribute('data-nome');
+        document.getElementById('edit_marca').value = btn.getAttribute('data-marca');
+        document.getElementById('edit_categoria').value = btn.getAttribute('data-categoria');
+        document.getElementById('edit_comp').value = btn.getAttribute('data-compatibilidade');
+        document.getElementById('edit_min').value = btn.getAttribute('data-minimo');
+        document.getElementById('edit_venda').value = btn.getAttribute('data-venda');
+        document.getElementById('edit_obs').value = btn.getAttribute('data-obs');
+        modalEdicao.show();
+    }
+
+    function editarEntrada(btn) {
+        document.getElementById('edit_mov_id').value = btn.getAttribute('data-id');
+        document.getElementById('edit_mov_qtd').value = btn.getAttribute('data-qtd');
+        document.getElementById('edit_mov_valor').value = btn.getAttribute('data-valor');
+        modalEditEntrada.show();
+    }
+
+    function abrirModalCancelar(id) {
+        document.getElementById('cancel_mov_id').value = id;
+        modalCancelarMov.show();
+    }
+
+    // --- FUNÇÃO DE BUSCA INTELIGENTE (CLIENT-SIDE) ---
+    function filtrarTabela() {
+        var busca = document.getElementById("filtroBusca").value.toUpperCase();
+        var marca = document.getElementById("filtroMarca").value.toUpperCase();
+        var apenasDisp = document.getElementById("checkDisp").checked;
+        
+        var tabela = document.getElementById("tabelaEstoque");
+        var tr = tabela.getElementsByTagName("tr");
+
+        for (var i = 1; i < tr.length; i++) {
+            // Se for a linha "sem resultados", ignora
+            if (tr[i].id === 'sem-resultados') continue;
+
+            var linha = tr[i];
+            var textoLinha = linha.innerText.toUpperCase();
+            var marcaProduto = linha.getAttribute("data-marca") ? linha.getAttribute("data-marca").toUpperCase() : "";
+            var qtdProduto = parseInt(linha.getAttribute("data-qtd")) || 0;
+
+            var matchBusca = (busca === "" || textoLinha.indexOf(busca) > -1);
+            var matchMarca = (marca === "" || marca === "TODAS" || marcaProduto === marca);
+            var matchQtd = (!apenasDisp || qtdProduto > 0);
+
+            if (matchBusca && matchMarca && matchQtd) {
+                linha.style.display = "";
+            } else {
+                linha.style.display = "none";
+            }
+        }
+    }
+
+    function limparFiltros() {
+        document.getElementById("filtroBusca").value = "";
+        document.getElementById("filtroMarca").value = "";
+        document.getElementById("checkDisp").checked = false;
+        filtrarTabela();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        toggleCamposEntrada();
+    });
+</script>
+{% endblock %}

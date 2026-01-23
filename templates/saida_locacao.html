@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* --- PADRÃO VISUAL (Igual Estoque/Dashboard) --- */
+    .page-title { color: #2C3E50 !important; font-family: 'Segoe UI', sans-serif; font-weight: 700; margin-bottom: 5px; }
+    
+    /* Filtros e Cards Clean */
+    .filter-bar { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 8px; }
+    
+    /* Tabela Minimalista */
+    .card-table { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border-radius: 8px; }
+    .table-scroll { max-height: 500px; overflow-y: auto; }
+    .table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+    .table thead th { 
+        position: sticky; top: 0; z-index: 2;
+        background-color: #f8f9fa; color: #6c757d; font-weight: 700; font-size: 0.8rem; 
+        border-bottom: 2px solid #e9ecef; border-top: none; padding: 12px 15px;
+        text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+        box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
+    }
+    .table tbody td { vertical-align: middle; color: #495057; font-size: 0.9rem; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; }
+    .table-hover tbody tr:hover { background-color: #fafafa; }
+
+    /* Badges */
+    .badge-pedido { background-color: #e9ecef; color: #495057; border: 1px solid #ced4da; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; font-weight: 700; }
+    .section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #adb5bd; margin-bottom: 10px; display: block; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    .form-label-clean { font-size: 0.8rem; font-weight: 700; color: #6c757d; margin-bottom: 4px; }
+</style>
+
+<div id="saida-locacao-page" class="page-content active">
+    
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div><h1 class="page-title">Saída para Locação</h1><p class="page-subtitle mb-0">Gerencie o envio de suprimentos e peças</p></div>
+            <div>
+                <button class="btn btn-primary btn-action shadow-sm" onclick="abrirModalNovaSaida()">
+                    <i class="fas fa-box-open me-2"></i> Nova Saída
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="filter-bar">
+        <form action="{{ url_for('saida_locacao') }}" method="GET">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label-clean">Buscar</label>
+                    <input type="text" class="form-control" placeholder="Pedido, Cliente..." name="busca" value="{{ request.args.get('busca', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label-clean">Período</label>
+                    <select class="form-select" name="periodo">
+                        <option value="mes_atual" {% if request.args.get('periodo') == 'mes_atual' %}selected{% endif %}>Este Mês</option>
+                        <option value="mes_passado" {% if request.args.get('periodo') == 'mes_passado' %}selected{% endif %}>Mês Passado</option>
+                        <option value="todos" {% if request.args.get('periodo') == 'todos' %}selected{% endif %}>Todos</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label-clean">Cliente</label>
+                    <select class="form-select" name="cliente_id">
+                        <option value="Todos">Todos</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}" {% if request.args.get('cliente_id') == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2"><button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> Filtrar</button></div>
+                <div class="col-md-2"><a href="{{ url_for('saida_locacao') }}" class="btn btn-outline-secondary w-100"><i class="fas fa-redo"></i> Limpar</a></div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="card card-table">
+        <div class="card-header bg-white py-3"><h5 class="card-title mb-0" style="font-size: 1rem;">Saídas Registradas</h5></div>
+        <div class="card-body p-0">
+            <div class="table-responsive table-scroll">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">PEDIDO</th>
+                            <th>DATA</th>
+                            <th>PRODUTO</th>
+                            <th class="text-center">QUANTIDADE</th>
+                            <th>CLIENTE</th>
+                            <th>IMPRESSORA</th>
+                            <th>OBSERVAÇÃO</th>
+                            <th>RESPONSÁVEL</th>
+                            <th width="100" class="text-end pe-4">AÇÕES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in pedidos %}
+                            {% for item in pedido.itens %}
+                            <tr>
+                                <td class="ps-4"><span class="badge-pedido">#{{ pedido.numero_pedido }}</span></td>
+                                <td class="text-muted">{{ pedido.data.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    <span class="fw-bold text-dark">{{ item.produto.nome }}</span>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">{{ item.produto.categoria }}</div>
+                                </td>
+                                <td class="text-center"><span class="fw-bold fs-6">{{ item.quantidade }}</span></td>
+                                <td><div class="fw-bold text-primary">{{ pedido.cliente.nome }}</div></td>
+                                <td class="text-muted small">
+                                    {% if pedido.impressora %}
+                                        <i class="fas fa-print me-1"></i> {{ pedido.impressora }}
+                                    {% else %} - {% endif %}
+                                </td>
+                                <td><span class="d-inline-block text-truncate text-muted small" style="max-width: 150px;">{{ pedido.observacao or '-' }}</span></td>
+                                <td class="text-muted small">Admin</td>
+                                <td class="text-end pe-4">
+                                    <div class="d-flex justify-content-end gap-1">
+                                        {% if pedido.status != 'Cancelado' %}
+                                            <a href="{{ url_for('imprimir_pedido', id=pedido.id) }}" target="_blank" class="btn btn-sm btn-light text-secondary" title="Imprimir"><i class="fas fa-print"></i></a>
+                                            <button class="btn btn-sm btn-light text-danger" onclick="abrirModalCancelar('{{ pedido.id }}')" title="Cancelar"><i class="fas fa-times"></i></button>
+                                        {% else %}
+                                            <span class="badge bg-danger">Cancelado</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="9" class="text-center p-5 text-muted">Nenhuma saída registrada neste período.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom fw-bold text-muted small text-uppercase">
+                    <i class="fas fa-chart-bar me-2"></i> Resumo Operacional (Maiores Saídas - Mês Atual)
+                </div>
+                <div class="card-body">
+                    {% if top_clientes %}
+                        {% for cliente in top_clientes %}
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-dark rounded-circle me-2" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;">{{ loop.index }}</span>
+                                <span class="d-block fw-bold text-dark">{{ cliente.nome }}</span>
+                            </div>
+                            <div class="fw-bold fs-5 text-primary">{{ cliente.total_itens }} itens</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">Sem dados para este mês.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="novaSaidaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Registrar Saída (Locação)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('gerar_pedido_saida') }}" method="POST">
+                <div class="modal-body bg-light">
+                    
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <span class="section-title">Dados do Pedido</span>
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label-clean">Cliente / Local</label>
+                                    <select class="form-select" name="cliente_id" id="saida_cliente" required onchange="carregarImpressorasCliente(this.value)">
+                                        <option value="" selected disabled>Selecione o Cliente...</option>
+                                        {% for c in clientes %}
+                                        <option value="{{ c.id }}">{{ c.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label-clean">Data</label>
+                                    <input type="date" class="form-control" name="data" value="{{ hoje.strftime('%Y-%m-%d') }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label-clean">Impressora Vinculada</label>
+                                    <select class="form-select" name="impressora" id="saida_impressora" disabled>
+                                        <option value="">Selecione um cliente primeiro...</option>
+                                    </select>
+                                    <div class="form-text small text-muted" id="loading_printer" style="display:none;">Carregando impressoras...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <span class="section-title">Itens da Saída</span>
+                            <div id="lista-produtos-pedido">
+                                <div class="row g-2 mb-2 align-items-end item-row">
+                                    <div class="col-9">
+                                        <label class="form-label-clean">Produto (Estoque Atual)</label>
+                                        <select class="form-select form-select-sm" name="produtos[]" required>
+                                            <option value="" disabled selected>Selecione...</option>
+                                            {% for p in produtos %}
+                                            <option value="{{ p.id }}">{{ p.nome }} (Est: {{ p.quantidade }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <label class="form-label-clean">Qtd</label>
+                                        <input type="number" class="form-control form-control-sm" name="quantidades[]" value="1" min="1">
+                                    </div>
+                                    <div class="col-1">
+                                        <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.item-row').remove()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="adicionarItemPedido()">
+                                <i class="fas fa-plus-circle me-1"></i> Adicionar Item
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <span class="section-title">Detalhes Adicionais</span>
+                            <textarea class="form-control border-0 bg-light" name="observacao" rows="2" placeholder="Solicitante, motivo da troca, etc..."></textarea>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Confirmar Saída</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCancelar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Cancelar Pedido</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('cancelar_pedido_saida') }}" method="POST">
+                <input type="hidden" name="pedido_id" id="cancel_pedido_id">
+                <div class="modal-body">
+                    <p>Tem certeza? O estoque dos itens será devolvido.</p>
+                    <textarea class="form-control" name="justificativa" placeholder="Motivo do cancelamento..." required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-danger w-100">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="template-item-pedido" style="display:none;">
+    <div class="row g-2 mb-2 align-items-center item-row">
+        <div class="col-9">
+            <select class="form-select form-select-sm" name="produtos[]" required>
+                <option value="" disabled selected>Selecione...</option>
+                {% for p in produtos %}
+                <option value="{{ p.id }}">{{ p.nome }} (Est: {{ p.quantidade }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-2">
+            <input type="number" class="form-control form-control-sm" name="quantidades[]" value="1" min="1">
+        </div>
+        <div class="col-1">
+            <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.item-row').remove()">X</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var modalCancelar = new bootstrap.Modal(document.getElementById('modalCancelar'));
+    var modalNovaSaida = new bootstrap.Modal(document.getElementById('novaSaidaModal'));
+
+    function abrirModalNovaSaida() {
+        // Reseta o select de impressoras
+        document.getElementById('saida_cliente').value = "";
+        var selImp = document.getElementById('saida_impressora');
+        selImp.innerHTML = '<option value="">Selecione um cliente primeiro...</option>';
+        selImp.disabled = true;
+        modalNovaSaida.show();
+    }
+
+    function adicionarItemPedido() {
+        var container = document.getElementById('lista-produtos-pedido');
+        var template = document.getElementById('template-item-pedido').firstElementChild;
+        container.appendChild(template.cloneNode(true));
+    }
+
+    function abrirModalCancelar(id) {
+        document.getElementById('cancel_pedido_id').value = id;
+        modalCancelar.show();
+    }
+
+    // --- LÓGICA DE CARREGAR IMPRESSORAS POR CLIENTE ---
+    function carregarImpressorasCliente(clienteId) {
+        var selImp = document.getElementById('saida_impressora');
+        var loading = document.getElementById('loading_printer');
+        
+        selImp.disabled = true;
+        selImp.innerHTML = '<option value="">Carregando...</option>';
+        loading.style.display = 'block';
+
+        fetch('/api/impressoras_cliente/' + clienteId)
+            .then(response => response.json())
+            .then(data => {
+                selImp.innerHTML = '';
+                
+                if (data.length === 0) {
+                    selImp.innerHTML = '<option value="">Nenhuma impressora locada para este cliente</option>';
+                    // Permite que o usuário digite ou selecione "Sem vínculo" se quiser? 
+                    // Pelo pedido, "selecionar apenas uma impressora vinculada", então deixamos assim.
+                } else {
+                    let defaultOption = document.createElement('option');
+                    defaultOption.value = "";
+                    defaultOption.text = "Selecione a Impressora...";
+                    defaultOption.disabled = true;
+                    defaultOption.selected = true;
+                    selImp.appendChild(defaultOption);
+
+                    data.forEach(imp => {
+                        let option = document.createElement('option');
+                        // Salva como texto "Modelo (Serial)" para ficar compatível com o banco
+                        option.value = imp.texto_display; 
+                        option.text = imp.texto_display;
+                        selImp.appendChild(option);
+                    });
+                    selImp.disabled = false;
+                }
+                loading.style.display = 'none';
+            })
+            .catch(err => {
+                console.error(err);
+                selImp.innerHTML = '<option value="">Erro ao carregar</option>';
+                loading.style.display = 'none';
+            });
+    }
+</script>
+{% endblock %}

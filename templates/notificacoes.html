@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .page-title { color: #2C3E50 !important; font-family: 'Segoe UI', sans-serif; font-weight: 700; }
+    .card-alert { border: none; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; background: white; border-left: 5px solid #ccc; transition: transform 0.2s; }
+    .card-alert:hover { transform: translateX(5px); }
+    
+    .alert-critical { border-left-color: #e74c3c; background-color: #fff5f5; }
+    .alert-warning { border-left-color: #f39c12; background-color: #fff8e1; }
+    
+    .alert-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 15px; }
+    .icon-critical { background-color: rgba(231, 76, 60, 0.1); color: #c0392b; }
+    .icon-warning { background-color: rgba(243, 156, 18, 0.1); color: #d35400; }
+</style>
+
+<div id="notificacoes-page" class="page-content active">
+    <div class="page-header mb-4">
+        <h1 class="page-title">Central de Notificações</h1>
+        <p class="text-muted">Acompanhe alertas de estoque e financeiro</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h5 class="mb-3 text-muted fw-bold"><i class="fas fa-boxes me-2"></i> Estoque</h5>
+            
+            {% if itens_atencao %}
+                {% for item in itens_atencao %}
+                <div class="card card-alert p-3 d-flex flex-row align-items-center {% if item.status == 'Crítico' %}alert-critical{% else %}alert-warning{% endif %}">
+                    <div class="alert-icon {% if item.status == 'Crítico' %}icon-critical{% else %}icon-warning{% endif %}">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0 fw-bold">{{ item.produto.nome }}</h6>
+                        <small class="text-muted">Estoque Atual: <strong>{{ item.produto.quantidade }}</strong> | Mínimo: {{ item.produto.minimo }}</small>
+                    </div>
+                    <div>
+                        <span class="badge {% if item.status == 'Crítico' %}bg-danger{% else %}bg-warning text-dark{% endif %}">{{ item.status }}</span>
+                    </div>
+                    <a href="{{ url_for('estoque') }}" class="btn btn-sm btn-link text-decoration-none ms-2"><i class="fas fa-arrow-right"></i></a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i> Estoque regular.</div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-6">
+            <h5 class="mb-3 text-muted fw-bold"><i class="fas fa-file-invoice-dollar me-2"></i> Financeiro (Vendas)</h5>
+            
+            {% if vendas_vencendo %}
+                {% for venda in vendas_vencendo %}
+                {% set dias = (hoje.date() - venda.data_vencimento).days %}
+                <div class="card card-alert p-3 d-flex flex-row align-items-center {% if dias > 0 %}alert-critical{% else %}alert-warning{% endif %}">
+                    <div class="alert-icon {% if dias > 0 %}icon-critical{% else %}icon-warning{% endif %}">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0 fw-bold">{{ venda.cliente.nome }}</h6>
+                        <small class="text-muted">Vencimento: {{ venda.data_vencimento.strftime('%d/%m') }} | Valor: {{ venda.valor_total | currency }}</small>
+                    </div>
+                    <div>
+                        {% if dias > 0 %}
+                            <span class="badge bg-danger">Atrasado {{ dias }}d</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Vence hoje</span>
+                        {% endif %}
+                    </div>
+                    <a href="{{ url_for('vendas') }}" class="btn btn-sm btn-link text-decoration-none ms-2"><i class="fas fa-arrow-right"></i></a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i> Nenhuma pendência financeira.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

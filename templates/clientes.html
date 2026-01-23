@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* --- Padrão Visual (Igual Vendas) --- */
+    
+    /* Título Específico conforme solicitado */
+    .page-title { 
+        color: #2C3E50 !important; 
+        font-family: 'Segoe UI', sans-serif; 
+        font-weight: 700; 
+        margin-bottom: 5px; 
+    }
+    
+    /* Filtros e Cards Clean */
+    .filter-bar { background-color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 8px; }
+    
+    /* Tabela Minimalista */
+    .table thead th { 
+        background-color: #f8f9fa; 
+        color: #6c757d; 
+        font-weight: 600; 
+        font-size: 0.85rem; 
+        border-bottom: 2px solid #e9ecef; 
+        border-top: none;
+        padding: 12px 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .table tbody td { 
+        vertical-align: middle; 
+        color: #495057; 
+        font-size: 0.9rem; 
+        padding: 12px 15px; 
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .table-hover tbody tr:hover { background-color: #fafafa; }
+
+    /* Badges Pill */
+    .badge-pill { padding: 5px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.3px; }
+    .badge-soft-primary { background-color: rgba(52, 152, 219, 0.1); color: #2980b9; border: 1px solid rgba(52, 152, 219, 0.2); }
+    .badge-soft-dark { background-color: rgba(52, 73, 94, 0.1); color: #2c3e50; border: 1px solid rgba(52, 73, 94, 0.2); }
+
+    /* Modal Clean */
+    .section-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #adb5bd; margin-bottom: 8px; display: block; letter-spacing: 0.5px; }
+    .input-group-text { background-color: #f8f9fa; color: #6c757d; border: 1px solid #ced4da; }
+</style>
+
+<div id="clientes-page" class="page-content active">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Clientes</h1>
+                <p class="page-subtitle mb-0">Gestão da carteira de clientes</p>
+            </div>
+            <div>
+                <button class="btn btn-primary btn-action shadow-sm" onclick="abrirModalCliente()">
+                    <i class="fas fa-user-plus me-2"></i> Novo Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Buscar</label>
+                <input type="text" class="form-control form-control-sm" id="filtroBusca" placeholder="Nome, documento ou email..." onkeyup="filtrarTabela()">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Tipo</label>
+                <select class="form-select form-select-sm" id="filtroTipo" onchange="filtrarTabela()">
+                    <option value="">Todos</option>
+                    <option value="Jurídica">Jurídica</option>
+                    <option value="Física">Física</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary btn-sm w-100" onclick="limparFiltros()">
+                    <i class="fas fa-eraser me-1"></i> Limpar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0" style="color: #2C3E50; font-family: 'Segoe UI'; font-weight: 600;">Lista de Clientes</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="tabelaClientes">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Nome / Razão Social</th>
+                            <th>Tipo</th>
+                            <th>Documento</th>
+                            <th>Endereço</th> <th>Contato</th>
+                            <th>Fechamento</th>
+                            <th width="100" class="text-end pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in clientes %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold" style="color: #2C3E50;">{{ cliente.nome }}</div>
+                                {% if cliente.observacao %}
+                                    <small class="text-muted d-block text-truncate" style="max-width: 250px;">
+                                        <i class="fas fa-info-circle me-1 small"></i> {{ cliente.observacao }}
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cliente.tipo_pessoa == 'Jurídica' %}
+                                    <span class="badge-pill badge-soft-primary">PJ</span>
+                                {% else %}
+                                    <span class="badge-pill badge-soft-dark">PF</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ cliente.documento if cliente.documento else '-' }}</td>
+                            
+                            <td class="text-muted small text-truncate" style="max-width: 200px;" title="{{ cliente.endereco }}">
+                                {{ cliente.endereco if cliente.endereco else '-' }}
+                            </td>
+
+                            <td>
+                                <div class="small">
+                                    {% if cliente.email %}
+                                        <div class="text-muted mb-1"><i class="fas fa-envelope me-1 opacity-50"></i> {{ cliente.email }}</div>
+                                    {% endif %}
+                                    {% if cliente.telefone %}
+                                        <div class="text-muted"><i class="fas fa-phone me-1 opacity-50"></i> {{ cliente.telefone }}</div>
+                                    {% endif %}
+                                    {% if not cliente.email and not cliente.telefone %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if cliente.data_fechamento %}
+                                    <span class="badge bg-light text-dark border fw-normal">{{ cliente.data_fechamento }}</span>
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <button class="btn btn-sm btn-light text-secondary" 
+                                        onclick="editarCliente(
+                                            '{{ cliente.id }}', 
+                                            '{{ cliente.nome }}', 
+                                            '{{ cliente.tipo_pessoa }}', 
+                                            '{{ cliente.documento }}', 
+                                            '{{ cliente.endereco }}', 
+                                            '{{ cliente.telefone }}', 
+                                            '{{ cliente.email }}', 
+                                            '{{ cliente.data_fechamento }}', 
+                                            `{{ cliente.observacao }}`
+                                        )" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <a href="{{ url_for('excluir_cliente', id=cliente.id) }}" class="btn btn-sm btn-light text-danger" onclick="return confirm('Tem certeza que deseja excluir este cliente?')" title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" class="text-center p-5 text-muted">Nenhum cliente cadastrado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCliente" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light border-bottom">
+                <h5 class="modal-title" style="color: #2C3E50; font-weight: 600;" id="tituloModal">Novo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('salvar_cliente') }}" method="POST">
+                <input type="hidden" name="cliente_id" id="cliente_id">
+                
+                <div class="modal-body bg-light">
+                    
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <span class="section-label">Identificação</span>
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label small text-muted">Nome / Razão Social</label>
+                                    <input type="text" class="form-control" name="nome" id="nome" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small text-muted">Tipo Pessoa</label>
+                                    <select class="form-select" name="tipo_pessoa" id="tipo_pessoa">
+                                        <option value="Jurídica">Jurídica (PJ)</option>
+                                        <option value="Física">Física (PF)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted">CPF / CNPJ</label>
+                                    <input type="text" class="form-control" name="documento" id="documento">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted">Data Fechamento</label>
+                                    <input type="text" class="form-control" name="data_fechamento" id="data_fechamento" placeholder="Ex: Dia 20">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <span class="section-label">Contato e Localização</span>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted">E-mail</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope small"></i></span>
+                                        <input type="email" class="form-control" name="email" id="email">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted">Telefone / WhatsApp</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-phone small"></i></span>
+                                        <input type="text" class="form-control" name="telefone" id="telefone">
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted">Endereço Completo</label>
+                                    <input type="text" class="form-control" name="endereco" id="endereco" placeholder="Rua, Número, Bairro, Cidade...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <span class="section-label">Observações</span>
+                            <textarea class="form-control border-0 bg-light" name="observacao" id="observacao" rows="2" placeholder="Informações adicionais..."></textarea>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var modalCliente = new bootstrap.Modal(document.getElementById('modalCliente'));
+
+    function abrirModalCliente() {
+        document.getElementById('tituloModal').innerText = "Novo Cliente";
+        document.getElementById('cliente_id').value = "";
+        
+        // Limpa campos
+        ['nome', 'documento', 'endereco', 'telefone', 'email', 'data_fechamento', 'observacao'].forEach(id => {
+            document.getElementById(id).value = "";
+        });
+        document.getElementById('tipo_pessoa').value = "Jurídica";
+        
+        modalCliente.show();
+    }
+
+    function editarCliente(id, nome, tipo, doc, end, tel, email, fechamento, obs) {
+        document.getElementById('tituloModal').innerText = "Editar Cliente";
+        document.getElementById('cliente_id').value = id;
+        document.getElementById('nome').value = nome;
+        document.getElementById('tipo_pessoa').value = tipo;
+        document.getElementById('documento').value = doc;
+        document.getElementById('endereco').value = end;
+        document.getElementById('telefone').value = tel;
+        document.getElementById('email').value = email;
+        document.getElementById('data_fechamento').value = fechamento;
+        document.getElementById('observacao').value = obs;
+        modalCliente.show();
+    }
+
+    function filtrarTabela() {
+        var input = document.getElementById("filtroBusca");
+        var filtro = input.value.toUpperCase();
+        var select = document.getElementById("filtroTipo");
+        var tipoFiltro = select.value.toUpperCase();
+        
+        var table = document.getElementById("tabelaClientes");
+        var tr = table.getElementsByTagName("tr");
+
+        for (var i = 1; i < tr.length; i++) {
+            var tdNome = tr[i].getElementsByTagName("td")[0];
+            var tdTipo = tr[i].getElementsByTagName("td")[1];
+            var tdDoc = tr[i].getElementsByTagName("td")[2];
+            
+            if (tdNome && tdTipo && tdDoc) {
+                var txtNome = tdNome.textContent || tdNome.innerText;
+                var txtTipo = tdTipo.textContent || tdTipo.innerText;
+                var txtDoc = tdDoc.textContent || tdDoc.innerText;
+                
+                var matchTexto = txtNome.toUpperCase().indexOf(filtro) > -1 || txtDoc.toUpperCase().indexOf(filtro) > -1;
+                var matchTipo = tipoFiltro === "" || txtTipo.toUpperCase().indexOf(tipoFiltro) > -1;
+
+                if (matchTexto && matchTipo) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }       
+        }
+    }
+
+    function limparFiltros() {
+        document.getElementById("filtroBusca").value = "";
+        document.getElementById("filtroTipo").value = "";
+        filtrarTabela();
+    }
+</script>
+{% endblock %}

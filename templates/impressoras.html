@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* --- ESTILOS GERAIS --- */
+    .page-title { color: #2C3E50 !important; font-family: 'Segoe UI', sans-serif; font-weight: 700; margin-bottom: 5px; }
+    
+    /* Cards de Resumo */
+    .card-resumo { border: none; border-radius: 8px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
+    .card-resumo:hover { transform: translateY(-3px); }
+    .card-resumo h3 { font-weight: 700; margin: 0; font-size: 2rem; }
+    
+    /* Filtros (Corrigido para Cinza/Muted) */
+    .filter-bar { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    
+    /* Cards de Impressora */
+    .impressora-card { 
+        border: none; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+        margin-bottom: 20px; background: white; border-left: 5px solid #ccc; 
+        transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;
+    }
+    .impressora-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+    .card-border-disponivel { border-left-color: #27ae60 !important; }
+    .card-border-locada { border-left-color: #f39c12 !important; }
+    .card-border-manutencao { border-left-color: #e74c3c !important; }
+    
+    .card-label { font-size: 0.75rem; text-transform: uppercase; color: #95a5a6; font-weight: 700; margin-bottom: 2px; display: block; }
+    .card-value { font-size: 0.95rem; font-weight: 600; color: #2c3e50; margin-bottom: 10px; display: block; }
+    
+    /* Badges */
+    .badge-status { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .st-disp { background-color: rgba(39, 174, 96, 0.15); color: #27ae60; border: 1px solid rgba(39, 174, 96, 0.3); }
+    .st-loc { background-color: rgba(243, 156, 18, 0.15); color: #d35400; border: 1px solid rgba(243, 156, 18, 0.3); }
+    .st-man { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border: 1px solid rgba(231, 76, 60, 0.3); }
+
+    /* Ações Card */
+    .card-actions { border-top: 1px solid #f0f0f0; padding-top: 15px; margin-top: 10px; display: flex; justify-content: space-between; }
+    .btn-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s; color: #7f8c8d; border: none; background: transparent; }
+    .btn-icon:hover { background-color: #f5f5f5; color: #2c3e50; }
+    .btn-icon.primary:hover { background-color: rgba(52, 152, 219, 0.1); color: #3498db; }
+    .btn-icon.danger:hover { background-color: rgba(231, 76, 60, 0.1); color: #e74c3c; }
+
+    /* Timeline Clean */
+    .timeline-clean { position: relative; padding: 10px 0 10px 20px; list-style: none; margin: 0; }
+    .timeline-clean::before { content: " "; position: absolute; top: 0; bottom: 0; left: 6px; width: 2px; background-color: #e9ecef; }
+    
+    .timeline-item-clean { position: relative; margin-bottom: 25px; }
+    .timeline-item-clean:last-child { margin-bottom: 0; }
+    
+    .timeline-marker { position: absolute; left: -21px; top: 0px; width: 14px; height: 14px; border-radius: 50%; background: white; border: 3px solid #3498db; z-index: 2; }
+    .marker-manutencao { border-color: #e74c3c; } 
+    .marker-locacao { border-color: #f39c12; }
+    
+    .timeline-content-clean { padding-left: 10px; }
+    .timeline-title { font-size: 0.95rem; color: #2c3e50; font-weight: 700; margin-bottom: 4px; }
+    .timeline-row { margin-bottom: 2px; font-size: 0.85rem; color: #555; line-height: 1.4; }
+    .timeline-label { font-weight: 700; color: #7f8c8d; margin-right: 5px; }
+
+    /* Abas e Accordion */
+    .nav-tabs .nav-link { color: #6c757d; font-weight: 600; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; }
+    .nav-tabs .nav-link.active { color: #2c3e50; background: transparent; border-bottom-color: #2c3e50; }
+    .accordion-button { font-weight: 600; color: #2c3e50; background-color: #fff; box-shadow: none !important; padding: 15px; }
+    .accordion-button:not(.collapsed) { color: #e74c3c; background-color: #fff5f5; }
+    .accordion-item { border: 1px solid #eee; margin-bottom: 10px; border-radius: 8px !important; overflow: hidden; }
+    
+    /* Modal Forms Clean */
+    .form-label-clean { font-size: 0.8rem; font-weight: 700; color: #6c757d; margin-bottom: 4px; }
+    
+    /* Tabelas */
+    .card-table-clean { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border-radius: 8px; }
+    .table-scroll { max-height: 350px; overflow-y: auto; }
+    .table thead th { position: sticky; top: 0; z-index: 2; background-color: #f8f9fa; color: #6c757d; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
+</style>
+
+<div id="impressoras-page" class="page-content active">
+    
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div><h1 class="page-title">Controle de Impressoras</h1><p class="page-subtitle mb-0">Gestão de patrimônio, locações e manutenções</p></div>
+            <div><button class="btn btn-primary btn-action shadow-sm" onclick="abrirModalCadastro()"><i class="fas fa-plus me-2"></i> Nova Impressora</button></div>
+        </div>
+    </div>
+
+    <div class="row mb-4 g-3">
+        <div class="col-md-3"><div class="card card-resumo bg-primary p-3"><div class="d-flex justify-content-between"><div><h3>{{ total }}</h3><small>TOTAL</small></div><i class="fas fa-print fa-2x opacity-50"></i></div></div></div>
+        <div class="col-md-3"><div class="card card-resumo bg-success p-3"><div class="d-flex justify-content-between"><div><h3>{{ disponiveis }}</h3><small>DISPONÍVEIS</small></div><i class="fas fa-check-circle fa-2x opacity-50"></i></div></div></div>
+        <div class="col-md-3"><div class="card card-resumo bg-warning text-dark p-3"><div class="d-flex justify-content-between"><div><h3>{{ locadas }}</h3><small>LOCADAS</small></div><i class="fas fa-truck fa-2x opacity-50"></i></div></div></div>
+        <div class="col-md-3"><div class="card card-resumo bg-danger p-3"><div class="d-flex justify-content-between"><div><h3>{{ manutencao }}</h3><small>MANUTENÇÃO</small></div><i class="fas fa-tools fa-2x opacity-50"></i></div></div></div>
+    </div>
+    
+    <div class="filter-bar">
+        <form action="{{ url_for('impressoras') }}" method="GET">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted fw-bold">Buscar</label>
+                    <input type="text" class="form-control" name="busca" placeholder="Serial, Marca, Modelo..." value="{{ request.args.get('busca', '') }}">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label small text-muted fw-bold">Status</label>
+                    <select class="form-select" name="status">
+                        <option value="Todas" {% if request.args.get('status') == 'Todas' %}selected{% endif %}>Todas</option>
+                        <option value="Disponível" {% if request.args.get('status') == 'Disponível' %}selected{% endif %}>Disponível</option>
+                        <option value="Locada" {% if request.args.get('status') == 'Locada' %}selected{% endif %}>Locada</option>
+                        <option value="Manutenção" {% if request.args.get('status') == 'Manutenção' %}selected{% endif %}>Manutenção</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small text-muted fw-bold">Cliente (Local)</label>
+                    <select class="form-select" name="cliente_id">
+                        <option value="Todos">Todos</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}" {% if request.args.get('cliente_id')|int == c.id %}selected{% endif %}>{{ c.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> Filtrar</button>
+                        <a href="{{ url_for('impressoras') }}" class="btn btn-outline-secondary w-100" title="Limpar"><i class="fas fa-redo"></i></a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="row g-4 mb-5">
+        {% for imp in impressoras %}
+            {% set border_class = 'card-border-disponivel' %}
+            {% if imp.status == 'Locada' %}{% set border_class = 'card-border-locada' %}
+            {% elif imp.status == 'Manutenção' %}{% set border_class = 'card-border-manutencao' %}{% endif %}
+
+        <div class="col-md-4 col-xl-3">
+            <div class="card impressora-card {{ border_class }} h-100" onclick="abrirHistoricoCompleto('{{ imp.id }}', '{{ imp.marca }} {{ imp.modelo }}')">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0">{{ imp.marca }} {{ imp.modelo }}</h5>
+                            <small class="text-muted">{{ imp.serial }}</small>
+                        </div>
+                        {% if imp.status == 'Disponível' %}<span class="badge-status st-disp">Estoque</span>
+                        {% elif imp.status == 'Locada' %}<span class="badge-status st-loc">Locada</span>
+                        {% else %}<span class="badge-status st-man">Manut.</span>{% endif %}
+                    </div>
+                    <div class="row g-0">
+                        <div class="col-6"><span class="card-label">MLT</span><span class="card-value">{{ imp.mlt or '-' }}</span></div>
+                        <div class="col-6 text-end"><span class="card-label">Contador</span><span class="card-value">{{ imp.contador }}</span></div>
+                        <div class="col-12 mt-2"><span class="card-label">Localização</span><span class="card-value text-primary text-truncate"><i class="fas fa-map-marker-alt me-1"></i> {{ imp.localizacao }}</span></div>
+                    </div>
+                    <div class="card-actions" onclick="event.stopPropagation();">
+                        <button class="btn-icon primary" onclick="abrirMovimentacao('{{ imp.id }}', '{{ imp.modelo }}', '{{ imp.status }}', '{{ imp.contador }}')" title="Movimentar"><i class="fas fa-exchange-alt"></i></button>
+                        {% if imp.status == 'Manutenção' %}
+                        <button class="btn-icon danger" onclick="abrirGestaoManutencao('{{ imp.id }}', '{{ imp.modelo }}')" title="Atualizar O.S."><i class="fas fa-wrench"></i></button>
+                        {% else %}
+                        <button class="btn-icon" onclick="abrirHistoricoCompleto('{{ imp.id }}', '{{ imp.modelo }}')" title="Histórico"><i class="fas fa-history"></i></button>
+                        {% endif %}
+                        <button class="btn-icon" onclick="abrirEdicao(this)" data-id="{{ imp.id }}" data-marca="{{ imp.marca }}" data-modelo="{{ imp.modelo }}" data-serial="{{ imp.serial }}" data-mlt="{{ imp.mlt }}" data-contador="{{ imp.contador }}" data-obs="{{ imp.observacao }}" title="Editar"><i class="fas fa-edit"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center text-muted py-5"><i class="fas fa-print fa-3x mb-3 opacity-25"></i><p>Nenhuma impressora encontrada.</p></div>
+        {% endfor %}
+    </div>
+
+    <div class="card card-table-clean">
+        <div class="card-header bg-white py-3 border-bottom"><h5 class="card-title mb-0" style="font-size: 1rem;"><i class="fas fa-list me-2"></i> Feed de Movimentações Recentes</h5></div>
+        <div class="card-body p-0">
+            <div class="table-responsive table-scroll">
+                <table class="table table-hover mb-0 align-middle small">
+                    <thead><tr><th class="ps-4">DATA</th><th>TIPO</th><th>IMPRESSORA</th><th>DE</th><th>PARA</th><th>CONTADOR</th><th>OBS</th></tr></thead>
+                    <tbody>
+                        {% for mov in ultimas_movimentacoes %}
+                        <tr>
+                            <td class="ps-4 text-muted">{{ mov.data.strftime('%d/%m %H:%M') }}</td>
+                            <td><span class="badge {% if 'Locação' in mov.tipo %}bg-warning text-dark{% elif 'Manutenção' in mov.tipo %}bg-danger{% else %}bg-success{% endif %}">{{ mov.tipo }}</span></td>
+                            <td><strong>{{ mov.impressora.marca }} {{ mov.impressora.modelo }}</strong></td>
+                            <td>{{ mov.origem }}</td>
+                            <td><strong>{{ mov.destino }}</strong></td>
+                            <td>{{ mov.contador_momento }}</td>
+                            <td>{{ mov.observacao }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" class="text-center p-4 text-muted">Sem movimentações recentes.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalImpressora" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white border-bottom">
+                <h5 class="modal-title fw-bold text-primary" id="tituloModalImp">Nova Impressora</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('criar_impressora') }}" method="POST" id="formImpressora">
+                <input type="hidden" name="impressora_id" id="imp_id">
+                <div class="modal-body bg-light">
+                    <div class="alert alert-info small border-0 shadow-sm"><i class="fas fa-info-circle me-2"></i> Equipamento iniciará como <strong>Disponível</strong> no <strong>Estoque</strong>.</div>
+                    
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <span class="section-title">Dados do Equipamento</span>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label-clean">Marca</label>
+                                    <input type="text" class="form-control" name="marca" id="imp_marca" required placeholder="Ex: HP">
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label-clean">Modelo</label>
+                                    <input type="text" class="form-control" name="modelo" id="imp_modelo" required placeholder="Ex: LaserJet M428">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label-clean">Serial</label>
+                                    <input type="text" class="form-control" name="serial" id="imp_serial" required>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label-clean">MLT (Patrimônio)</label>
+                                    <input type="text" class="form-control" name="mlt" id="imp_mlt">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label-clean">Contador Inicial</label>
+                                    <input type="number" class="form-control" name="contador" id="imp_contador" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <label class="form-label-clean">Observações</label>
+                            <textarea class="form-control border-0 bg-light" name="observacao" id="imp_obs" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light"><button type="submit" class="btn btn-primary px-4">Salvar Registro</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalHistoricoCompleto" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white border-bottom">
+                <h5 class="modal-title fw-bold text-dark">Histórico: <span id="hist_titulo" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-light p-0">
+                <ul class="nav nav-tabs nav-justified bg-white" id="histTabs" role="tablist">
+                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-mov">Movimentações</button></li>
+                    <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#tab-manut">Manutenções (O.S.)</button></li>
+                </ul>
+                <div class="tab-content p-4">
+                    <div class="tab-pane fade show active" id="tab-mov"><ul class="timeline-clean" id="lista_movimentacoes"></ul></div>
+                    <div class="tab-pane fade" id="tab-manut"><div class="accordion" id="accordionManutencoes"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalMovimentacao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white border-bottom"><h5 class="modal-title fw-bold text-dark">Movimentar Equipamento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('movimentar_impressora') }}" method="POST" onsubmit="return validarContador()">
+                <input type="hidden" name="impressora_id" id="mov_imp_id">
+                <input type="hidden" id="mov_contador_anterior"> 
+                <div class="modal-body bg-light">
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-3"><span class="fw-bold text-primary" id="mov_imp_nome"></span><span class="badge bg-light text-dark border">Contador Atual: <span id="mov_display_contador"></span></span></div>
+                            <div class="mb-3"><label class="form-label-clean">Ação</label><select class="form-select" name="tipo_movimentacao" id="tipoMov" onchange="toggleClienteSelect()" required><option value="" disabled selected>Selecione...</option><option value="Locação">Saída para Locação</option><option value="Estoque">Devolução / Estoque</option><option value="Manutenção">Enviar para Manutenção</option></select></div>
+                            <div class="mb-3" id="divClienteSelect" style="display: none;"><label class="form-label-clean text-primary">Selecione o Cliente</label><select class="form-select" name="cliente_id">{% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}</select></div>
+                            <div class="mb-3"><label class="form-label-clean">Novo Contador</label><input type="number" class="form-control" name="contador_atual" id="mov_contador" required><div class="form-text text-danger small fw-bold" id="avisoContador" style="display:none;"><i class="fas fa-exclamation-circle"></i> O contador deve ser maior que o anterior!</div></div>
+                        </div>
+                    </div>
+                    <div class="card border-0 shadow-sm"><div class="card-body"><label class="form-label-clean">Observações</label><textarea class="form-control border-0 bg-light" name="observacao" rows="2" required></textarea></div></div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light"><button type="submit" class="btn btn-primary w-100">Confirmar Movimentação</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGestaoManutencao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white border-bottom"><h5 class="modal-title fw-bold text-danger">Atualizar Manutenção</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('adicionar_log_manutencao') }}" method="POST">
+                <div class="modal-body bg-light">
+                    <p class="mb-3 ps-1 fw-bold text-dark" id="manut_imp_nome"></p>
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="mb-3"><label class="form-label-clean">Ordem de Serviço (O.S.)</label><select class="form-select" name="manutencao_id" id="manut_os_select" required><option value="" disabled selected>Carregando...</option></select></div>
+                            <div class="mb-0"><label class="form-label-clean">Evento / Status</label><select class="form-select" name="status_detalhe" required><option>Aguardando Peça</option><option>Enviado p/ Terceiro</option><option>Aguardando Orçamento</option><option>Orçamento Aprovado</option><option>Em Bancada</option><option>Pronto p/ Retirada</option><option>Outro</option></select></div>
+                        </div>
+                    </div>
+                    <div class="card border-0 shadow-sm"><div class="card-body"><label class="form-label-clean">Detalhes</label><textarea class="form-control border-0 bg-light" name="observacao" rows="3"></textarea></div></div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light"><button type="submit" class="btn btn-danger w-100">Registrar na O.S.</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var modalCadastro = new bootstrap.Modal(document.getElementById('modalImpressora'));
+    var modalMov = new bootstrap.Modal(document.getElementById('modalMovimentacao'));
+    var modalHist = new bootstrap.Modal(document.getElementById('modalHistoricoCompleto'));
+    var modalManut = new bootstrap.Modal(document.getElementById('modalGestaoManutencao'));
+
+    function abrirModalCadastro() {
+        document.getElementById('tituloModalImp').innerText = "Nova Impressora";
+        document.getElementById('formImpressora').action = "{{ url_for('criar_impressora') }}";
+        // Limpar
+        document.getElementById('imp_id').value = "";
+        document.getElementById('imp_marca').value = ""; // NOVO
+        document.getElementById('imp_modelo').value = "";
+        document.getElementById('imp_serial').value = "";
+        document.getElementById('imp_mlt').value = "";
+        document.getElementById('imp_contador').value = "0";
+        document.getElementById('imp_obs').value = "";
+        modalCadastro.show();
+    }
+
+    function abrirEdicao(btn) {
+        document.getElementById('tituloModalImp').innerText = "Editar Impressora";
+        document.getElementById('formImpressora').action = "{{ url_for('editar_impressora') }}";
+        
+        document.getElementById('imp_id').value = btn.getAttribute('data-id');
+        document.getElementById('imp_marca').value = btn.getAttribute('data-marca'); // NOVO
+        document.getElementById('imp_modelo').value = btn.getAttribute('data-modelo');
+        document.getElementById('imp_serial').value = btn.getAttribute('data-serial');
+        document.getElementById('imp_mlt').value = btn.getAttribute('data-mlt');
+        document.getElementById('imp_contador').value = btn.getAttribute('data-contador');
+        document.getElementById('imp_obs').value = btn.getAttribute('data-obs');
+        modalCadastro.show();
+    }
+
+    function abrirMovimentacao(id, nome, status, contador) {
+        document.getElementById('mov_imp_id').value = id;
+        document.getElementById('mov_imp_nome').innerText = nome;
+        document.getElementById('mov_display_contador').innerText = contador;
+        document.getElementById('mov_contador').value = contador;
+        document.getElementById('mov_contador_anterior').value = contador;
+        toggleClienteSelect();
+        modalMov.show();
+    }
+
+    function abrirGestaoManutencao(id, nome) {
+        document.getElementById('manut_imp_nome').innerText = nome;
+        var selectOS = document.getElementById('manut_os_select');
+        selectOS.innerHTML = '<option value="" disabled selected>Carregando O.S....</option>';
+        
+        fetch('/api/manutencoes_impressora/' + id).then(res => res.json()).then(data => {
+            selectOS.innerHTML = '';
+            if (data.length === 0) { selectOS.innerHTML = '<option value="" disabled>Nenhuma O.S. encontrada</option>'; return; }
+            let selectedId = null;
+            data.forEach(m => {
+                let texto = `O.S. #${m.numero} - ${m.inicio} (${m.status})`;
+                let option = document.createElement("option");
+                option.value = m.id; option.text = texto;
+                if (m.status === 'Aberta' && selectedId === null) selectedId = m.id;
+                selectOS.appendChild(option);
+            });
+            if (selectedId) selectOS.value = selectedId; else selectOS.selectedIndex = 0;
+        });
+        modalManut.show();
+    }
+
+    // --- CARREGAR HISTÓRICO COM ABAS ---
+    function abrirHistoricoCompleto(id, modelo) {
+        document.getElementById('hist_titulo').innerText = modelo;
+        var listaMov = document.getElementById('lista_movimentacoes');
+        var listaManut = document.getElementById('accordionManutencoes');
+        
+        listaMov.innerHTML = '<li class="text-center text-muted">Carregando...</li>';
+        listaManut.innerHTML = '<div class="text-center text-muted p-3">Carregando...</div>';
+        
+        fetch('/api/historico_completo/' + id).then(res => res.json()).then(data => {
+            listaMov.innerHTML = '';
+            listaManut.innerHTML = '';
+            
+            // 1. ABA MOVIMENTAÇÕES
+            if (data.movimentacoes && data.movimentacoes.length > 0) {
+                data.movimentacoes.forEach(m => {
+                    let colorClass = 'timeline-marker'; 
+                    if(m.tipo.includes('Locação')) colorClass = 'marker-locacao';
+                    
+                    listaMov.innerHTML += `
+                    <li class="timeline-item-clean">
+                        <div class="timeline-marker ${colorClass}"></div>
+                        <div class="timeline-content-clean">
+                            <div class="timeline-title">${m.tipo} <small class="text-muted fw-normal float-end">${m.data}</small></div>
+                            <div class="timeline-row"><span class="timeline-label">De:</span> ${m.origem} &rarr; <strong>${m.destino}</strong></div>
+                            <div class="timeline-row"><span class="timeline-label">Contador:</span> ${m.contador}</div>
+                            ${m.obs ? `<div class="timeline-row text-muted fst-italic small mt-1">"${m.obs}"</div>` : ''}
+                        </div>
+                    </li>`;
+                });
+            } else {
+                listaMov.innerHTML = '<li class="text-center text-muted py-4">Sem movimentações registradas.</li>';
+            }
+
+            // 2. ABA MANUTENÇÕES
+            if (data.manutencoes && data.manutencoes.length > 0) {
+                data.manutencoes.forEach((os, index) => {
+                    let isOpen = (os.status === 'Aberta') ? 'show' : '';
+                    let badge = (os.status === 'Aberta') ? '<span class="badge bg-danger">Aberta</span>' : '<span class="badge bg-success">Fechada</span>';
+                    
+                    let logsHtml = '';
+                    if (os.logs && os.logs.length > 0) {
+                        logsHtml = '<ul class="timeline-clean mt-3">';
+                        os.logs.forEach(log => {
+                            logsHtml += `
+                            <li class="timeline-item-clean">
+                                <div class="timeline-marker marker-manutencao"></div>
+                                <div class="timeline-content-clean">
+                                    <div class="timeline-title text-dark">${log.titulo} <small class="text-muted fw-normal float-end">${log.data}</small></div>
+                                    <div class="timeline-row"><span class="timeline-label">Detalhes:</span> ${log.obs}</div>
+                                </div>
+                            </li>`;
+                        });
+                        logsHtml += '</ul>';
+                    } else {
+                        logsHtml = '<div class="text-muted small text-center py-2">Sem logs registrados nesta O.S.</div>';
+                    }
+
+                    listaManut.innerHTML += `
+                    <div class="accordion-item border shadow-sm mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button ${isOpen ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#os${index}">
+                                <div class="d-flex w-100 justify-content-between align-items-center pe-3">
+                                    <span><strong>O.S. #${os.numero}</strong> - ${os.inicio}</span>
+                                    ${badge}
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="os${index}" class="accordion-collapse collapse ${isOpen}" data-bs-parent="#accordionManutencoes">
+                            <div class="accordion-body bg-white">
+                                <div class="alert alert-light border small mb-0"><strong>Motivo Inicial:</strong> ${os.motivo}</div>
+                                ${logsHtml}
+                                <div class="text-end small text-muted border-top pt-2 mt-3">Fim: ${os.fim}</div>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            } else {
+                listaManut.innerHTML = '<div class="text-center text-muted py-4">Nenhuma ordem de serviço encontrada.</div>';
+            }
+            
+            modalHist.show();
+        });
+    }
+
+    function toggleClienteSelect() {
+        var tipo = document.getElementById("tipoMov").value;
+        var div = document.getElementById("divClienteSelect");
+        if (tipo === "Locação") div.style.display = "block"; else div.style.display = "none";
+    }
+
+    function validarContador() {
+        var atual = parseInt(document.getElementById('mov_contador').value);
+        var anterior = parseInt(document.getElementById('mov_contador_anterior').value);
+        // Se contador anterior > 0 e atual < anterior, bloqueia
+        if (anterior > 0 && atual < anterior) {
+            document.getElementById('avisoContador').style.display = 'block';
+            return false;
+        }
+        document.getElementById('avisoContador').style.display = 'none';
+        return true;
+    }
+</script>
+{% endblock %}

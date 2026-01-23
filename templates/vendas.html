@@ -1,0 +1,693 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* --- CSS Específico para igualar ao Dashboard (Index.html) --- */
+    
+    /* Títulos */
+    .page-title { color: var(--primary-color); font-weight: 700; margin-bottom: 5px; }
+    
+    /* Filtros Clean */
+    .filter-bar { background-color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    
+    /* Tabelas */
+    .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 8px; margin-bottom: 20px; }
+    .card-header { background-color: white; border-bottom: 1px solid #eee; padding: 15px 20px; }
+    .card-title { font-weight: 600; color: var(--primary-color); margin: 0; font-size: 1.1rem; }
+    
+    .table thead th { 
+        background-color: #f8f9fa; 
+        color: #6c757d; 
+        font-weight: 600; 
+        font-size: 0.85rem; 
+        border-bottom: 2px solid #e9ecef; 
+        border-top: none;
+        padding: 12px 15px;
+        text-transform: uppercase;
+    }
+    .table tbody td { 
+        vertical-align: middle; 
+        color: #495057; 
+        font-size: 0.9rem; 
+        padding: 12px 15px; 
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .table-hover tbody tr:hover { background-color: #fafafa; }
+
+    /* ESTILO VISUAL DOS ANEXOS (Vencimentos) */
+    /* Fundo suave + Borda lateral grossa */
+    .row-alert-orange { 
+        background-color: rgba(243, 156, 18, 0.08) !important; 
+        border-left: 4px solid #f39c12 !important; 
+    }
+    .row-alert-red { 
+        background-color: rgba(231, 76, 60, 0.08) !important; 
+        border-left: 4px solid #e74c3c !important; 
+    }
+    /* Remove borda padrão da tabela nessas linhas para não conflitar com a borda lateral */
+    .row-alert-orange td:first-child, .row-alert-red td:first-child {
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+    }
+
+    /* Badges Pill */
+    .badge-pill { padding: 5px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
+    .badge-soft-success { background-color: rgba(39, 174, 96, 0.1); color: #27ae60; border: 1px solid rgba(39, 174, 96, 0.2); }
+    .badge-soft-warning { background-color: rgba(243, 156, 18, 0.1); color: #d35400; border: 1px solid rgba(243, 156, 18, 0.2); }
+    .badge-soft-danger { background-color: rgba(231, 76, 60, 0.1); color: #c0392b; border: 1px solid rgba(231, 76, 60, 0.2); }
+    .badge-soft-purple { background-color: rgba(155, 89, 182, 0.1); color: #8e44ad; border: 1px solid rgba(155, 89, 182, 0.2); }
+    .badge-soft-info { background-color: rgba(52, 152, 219, 0.1); color: #2980b9; border: 1px solid rgba(52, 152, 219, 0.2); }
+    .badge-soft-gray { background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; }
+
+    /* Navegação de Abas */
+    .nav-tabs { border-bottom: 1px solid #e0e0e0; }
+    .nav-tabs .nav-link { color: #6c757d; border: none; font-weight: 500; background: none; }
+    .nav-tabs .nav-link.active { color: var(--secondary-color); border-bottom: 3px solid var(--secondary-color); font-weight: 600; }
+    .nav-tabs .nav-link:hover { color: var(--primary-color); }
+
+    /* Modal Alinhamento */
+    .modal-header { border-bottom: 1px solid #eee; }
+    .input-group-text { background-color: #f8f9fa; color: #6c757d; border: 1px solid #ced4da; }
+    .section-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #adb5bd; margin-bottom: 5px; display: block; }
+    
+    /* Inputs Condicionais */
+    .conditional-input { background-color: #fff; border-left: 3px solid var(--secondary-color); padding: 10px; margin-top: 8px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+</style>
+
+<div id="vendas-page" class="page-content active">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Controle de Vendas</h1>
+                <p class="page-subtitle mb-0">Gerencie vendas, pagamentos e vencimentos</p>
+            </div>
+            <div>
+                <button class="btn btn-primary btn-action shadow-sm" onclick="abrirModalNovaVenda()">
+                    <i class="fas fa-cart-plus me-2"></i> Nova Venda
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <ul class="nav nav-tabs mb-4" id="vendasTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-vendas-ativas">Vendas Ativas</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-vencimentos">Vencimentos</button></li>
+        <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#tab-canceladas">Canceladas</button></li>
+    </ul>
+    
+    <div class="tab-content">
+        
+        <div class="tab-pane fade show active" id="tab-vendas-ativas">
+            <div class="filter-bar">
+                <form action="{{ url_for('vendas') }}" method="GET">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">Status</label>
+                            <select class="form-select form-select-sm" name="status_filtro">
+                                <option value="Todos" {% if request.args.get('status_filtro') == 'Todos' %}selected{% endif %}>Todos</option>
+                                <option value="Pendentes" {% if request.args.get('status_filtro') == 'Pendentes' %}selected{% endif %}>Pendentes</option>
+                                <option value="Finalizadas" {% if request.args.get('status_filtro') == 'Finalizadas' %}selected{% endif %}>Finalizadas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">Cliente</label>
+                            <input type="text" class="form-control form-control-sm" name="cliente" placeholder="Nome..." value="{{ request.args.get('cliente', '') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted">Início</label>
+                            <input type="date" class="form-control form-control-sm" name="data_inicio" value="{{ request.args.get('data_inicio') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted">Fim</label>
+                            <input type="date" class="form-control form-control-sm" name="data_fim" value="{{ request.args.get('data_fim') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fas fa-filter"></i> Filtrar</button>
+                                <a href="{{ url_for('vendas') }}" class="btn btn-outline-secondary btn-sm" title="Limpar Filtros"><i class="fas fa-eraser"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Vendas Recentes</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Pagamento</th>
+                                    <th>Vencimento</th> <th>Nº Boleto</th>
+                                    <th>Nº NF</th>
+                                    <th>Status</th>
+                                    <th width="120" class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venda in vendas %}
+                                <tr>
+                                    <td>{{ venda.data.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ venda.cliente.nome }}</td>
+                                    <td><strong>{{ venda.valor_total | currency }}</strong></td>
+                                    <td>
+                                        {% if venda.forma_pagamento == 'BOLETO' %} <span class="badge-pill badge-soft-purple">BOLETO</span>
+                                        {% elif venda.forma_pagamento == 'PIX' %} <span class="badge-pill badge-soft-info">PIX</span>
+                                        {% elif venda.forma_pagamento == 'LOCACAO' %} <span class="badge-pill badge-soft-warning">LOCAÇÃO</span>
+                                        {% else %} <span class="badge-pill badge-soft-gray">{{ venda.forma_pagamento }}</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td>
+                                        {% if venda.data_vencimento %}
+                                            {{ venda.data_vencimento.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="text-muted small">{{ venda.numero_boleto if venda.numero_boleto else '-' }}</td>
+                                    <td class="text-muted small">
+                                        {% if venda.status_nf == 'NF Feita' %}
+                                            <span class="text-success fw-bold">{{ venda.numero_nf }}</span>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if venda.status_pagamento == 'Pago' %} 
+                                            <span class="badge-pill badge-soft-success">Pago</span>
+                                        {% else %} 
+                                            <span class="badge-pill badge-soft-warning">Pendente</span> 
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-1">
+                                            <button class="btn btn-sm btn-light text-primary" onclick="verDetalhesVenda('{{ venda.id }}')" title="Ver Resumo"><i class="fas fa-eye"></i></button>
+                                            <button class="btn btn-sm btn-light text-secondary" onclick="abrirModalGerenciar('{{ venda.id }}')" title="Editar / Baixar"><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-sm btn-light text-danger" onclick="abrirModalCancelar('{{ venda.id }}')" title="Cancelar"><i class="fas fa-times"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="9" class="text-center p-5 text-muted">Nenhuma venda encontrada.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="tab-vencimentos">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Contas a Receber</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Vencimento</th>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Pagamento</th>
+                                    <th>Situação</th>
+                                    <th class="text-end pe-4">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venda in vencimentos %}
+                                    {% set dias_atraso = (hoje.date() - venda.data_vencimento).days %}
+                                    
+                                    <tr class="{% if dias_atraso > 0 %}row-alert-red{% else %}row-alert-orange{% endif %}">
+                                        <td class="ps-4 fw-bold">{{ venda.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ venda.cliente.nome }}</td>
+                                        <td>{{ venda.valor_total | currency }}</td>
+                                        <td>{{ venda.forma_pagamento }}</td>
+                                        <td>
+                                            {% if dias_atraso > 0 %}
+                                                <span class="text-danger fw-bold">{{ dias_atraso }} dias atrasado</span>
+                                            {% else %}
+                                                <span class="text-warning fw-bold">Vence em breve</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <div class="d-flex justify-content-end gap-1">
+                                                <button class="btn btn-sm btn-success rounded-pill px-3" onclick="abrirModalGerenciar('{{ venda.id }}')">
+                                                    <i class="fas fa-check me-1"></i> Baixar
+                                                </button>
+                                                <button class="btn btn-sm btn-light text-secondary" onclick="verDetalhesVenda('{{ venda.id }}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="6" class="text-center p-5 text-success"><i class="fas fa-check-circle fa-2x mb-3"></i><br>Tudo pago! Nenhuma pendência.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab-canceladas">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Vendas Canceladas</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead><tr><th>Data</th><th>Cliente</th><th>Valor</th><th>Nº NF</th><th>Motivo</th></tr></thead>
+                            <tbody>
+                                {% for venda in canceladas %}
+                                    <tr>
+                                        <td class="text-muted">{{ venda.data.strftime('%d/%m/%Y') }}</td>
+                                        <td class="text-muted text-decoration-line-through">{{ venda.cliente.nome }}</td>
+                                        <td class="text-muted text-decoration-line-through">{{ venda.valor_total | currency }}</td>
+                                        <td class="text-muted small">{{ venda.numero_nf if venda.numero_nf else '-' }}</td>
+                                        <td class="text-danger small">{{ venda.justificativa_cancelamento }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="5" class="text-center p-5 text-muted">Nenhum cancelamento registrado.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGerenciar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fs-5 text-dark">Gerenciar Venda #<span id="edit_venda_id_display"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('atualizar_venda') }}" method="POST">
+                <input type="hidden" name="venda_id" id="edit_venda_id">
+                
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <span class="section-label">Financeiro</span>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Vencimento</label>
+                                <input type="date" class="form-control" name="data_vencimento" id="edit_data_vencimento">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Status Pagamento</label>
+                                <select class="form-select" name="status_pagamento" id="edit_status_pagamento">
+                                    <option value="Pendente">Pendente</option>
+                                    <option value="Pago">Pago</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="text-muted opacity-25">
+
+                    <div class="mb-4">
+                        <span class="section-label">Meio de Pagamento</span>
+                        <select class="form-select mb-2" name="forma_pagamento" id="edit_forma_pagamento" onchange="verificarFormaPagamento()">
+                            <option value="PIX">PIX</option>
+                            <option value="BOLETO">BOLETO</option>
+                            <option value="LOCACAO">LOCAÇÃO</option>
+                            <option value="CARTAO">CARTÃO</option>
+                            <option value="DINHEIRO">DINHEIRO</option>
+                        </select>
+
+                        <div id="div_boleto" style="display:none;" class="conditional-input">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-5">
+                                    <label class="small text-muted mb-1">Status</label>
+                                    <select class="form-select form-select-sm" name="status_boleto" id="edit_status_boleto">
+                                        <option value="Falta Boleto">Falta Boleto</option>
+                                        <option value="Boleto Feito">Boleto Feito</option>
+                                    </select>
+                                </div>
+                                <div class="col-7">
+                                    <label class="small text-muted mb-1">Número do Boleto</label>
+                                    <input type="text" class="form-control form-control-sm" name="numero_boleto" id="edit_numero_boleto" placeholder="Digite o número...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="text-muted opacity-25">
+
+                    <div class="mb-4">
+                        <span class="section-label">Documento Fiscal</span>
+                        <select class="form-select mb-2" name="status_nf" id="edit_status_nf" onchange="toggleInputNF()">
+                            <option value="Falta NF">Falta NF</option>
+                            <option value="NF Feita">NF Feita</option>
+                            <option value="Recibo Simples">Recibo Simples</option>
+                        </select>
+
+                        <div id="div_nf_input" style="display:none;" class="conditional-input">
+                            <label class="small text-dark fw-bold mb-1">Número da Nota Fiscal</label>
+                            <input type="text" class="form-control" name="numero_nf" id="edit_numero_nf" placeholder="Ex: 123456">
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <span class="section-label">Logística</span>
+                        <select class="form-select" name="status_envio" id="edit_status_envio">
+                            <option value="Falta Enviar">Falta Enviar</option>
+                            <option value="Enviado">Enviado</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="modal-footer bg-light">
+                    <button type="submit" class="btn btn-primary w-100">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="novaVendaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fs-5">Nova Venda</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('nova_venda') }}" method="POST">
+                <div class="modal-body bg-light">
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold">Cliente</label>
+                                    <div class="input-group">
+                                        <select class="form-select" name="cliente_id" id="cliente_select" required onchange="mostrarDetalhesCliente(this)">
+                                            <option value="" selected disabled>Selecione...</option>
+                                            {% for c in clientes %}
+                                            <option value="{{ c.id }}" data-nome="{{ c.nome }}" data-obs="{{ c.observacao }}" data-tel="{{ c.telefone }}" data-doc="{{ c.documento }}">{{ c.nome }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button class="btn btn-outline-info" type="button" onclick="verDetalhesClienteSelecionado()"><i class="fas fa-info-circle"></i></button>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small text-muted fw-bold">Pagamento</label>
+                                    <select class="form-select" name="forma_pagamento">
+                                        <option>PIX</option><option>BOLETO</option><option>LOCACAO</option><option>CARTAO</option><option>DINHEIRO</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small text-muted fw-bold">Vencimento</label>
+                                    <input type="date" class="form-control" name="data_vencimento">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <label class="form-label small text-muted fw-bold mb-2">Itens</label>
+                            <div id="lista-produtos-venda"></div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="adicionarItemVenda()">
+                                <i class="fas fa-plus-circle me-1"></i> Adicionar Item
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control border-0 bg-white shadow-sm" name="observacao" placeholder="Observações...">
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <h4 class="mb-0 text-primary fw-bold" id="total-venda-display">R$ 0,00</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="submit" class="btn btn-primary px-4">Finalizar Venda</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalResumoVenda" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalhes da Venda #<span id="resumo_id"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="p-3 bg-light border-bottom">
+                    <h6 class="fw-bold mb-1" id="resumo_cliente"></h6>
+                    <small class="text-muted" id="resumo_data"></small>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="bg-white"><tr><th class="ps-3">Produto</th><th class="text-center">Qtd</th><th class="text-end pe-3">Subtotal</th></tr></thead>
+                        <tbody id="resumo_itens_lista"></tbody>
+                        <tfoot class="bg-light">
+                            <tr><td colspan="2" class="text-end fw-bold pt-3">Total:</td><td class="text-end fw-bold pt-3 pe-3 text-primary fs-5" id="resumo_total"></td></tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="p-3 border-top">
+                    <div class="row g-2">
+                        <div class="col-6"><small class="text-muted d-block">Pagamento:</small><span id="resumo_pagamento" class="fw-bold text-dark"></span></div>
+                        <div class="col-6"><small class="text-muted d-block">Status:</small><span id="resumo_status"></span></div>
+                        <div class="col-6 mt-2"><small class="text-muted d-block">NF:</small><span id="resumo_nf_txt"></span></div>
+                        <div class="col-6 mt-2"><small class="text-muted d-block">Boleto:</small><span id="resumo_boleto_txt"></span></div>
+                    </div>
+                    <div class="mt-2 p-2 bg-light rounded small text-muted fst-italic" id="resumo_obs_box" style="display:none;">Obs: <span id="resumo_obs"></span></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalInfoCliente" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white py-2"><h6 class="modal-title small">Cliente</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body small">
+                <h6 id="info_nome_cliente" class="fw-bold text-center border-bottom pb-2 mb-2"></h6>
+                <p class="mb-1"><strong>Doc:</strong> <span id="info_doc_cliente">-</span></p>
+                <p class="mb-1"><strong>Tel:</strong> <span id="info_tel_cliente">-</span></p>
+                <div class="mt-2 p-2 bg-light border rounded text-muted"><span id="info_obs_cliente"></span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCancelar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white"><h5 class="modal-title">Cancelar Venda</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('cancelar_venda') }}" method="POST">
+                <input type="hidden" name="venda_id" id="cancel_venda_id">
+                <div class="modal-body">
+                    <p class="mb-2">Confirmar cancelamento? Itens serão estornados.</p>
+                    <textarea class="form-control" name="justificativa" required rows="2" placeholder="Motivo..."></textarea>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-danger w-100">Confirmar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="template-item-venda" style="display:none;">
+    <div class="item-row bg-white border-bottom p-2">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <select class="form-select form-select-sm produto-select" name="produtos[]" required onchange="atualizarPrecoEEstoque(this)">
+                    <option value="" disabled selected>Produto...</option>
+                    {% for p in produtos %}
+                    <option value="{{ p.id }}" data-preco="{{ p.valor_venda }}" data-estoque="{{ p.quantidade }}">{{ p.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 text-center"><small class="text-muted stock-display" style="font-size: 0.75rem;">-</small></div>
+            <div class="col-md-2"><input type="number" class="form-control form-control-sm text-center qtd-input" name="quantidades[]" value="1" min="1" onchange="calcularTotalVenda()"></div>
+            <div class="col-md-2"><input type="text" class="form-control form-control-sm valor-input ps-1" name="valores[]" onchange="calcularTotalVenda()"></div>
+            <div class="col-md-1 text-end"><button type="button" class="btn btn-sm text-danger" onclick="removerItem(this)"><i class="fas fa-times"></i></button></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var modalGerenciar = new bootstrap.Modal(document.getElementById('modalGerenciar'));
+    var modalNova = new bootstrap.Modal(document.getElementById('novaVendaModal'));
+    var modalCancelar = new bootstrap.Modal(document.getElementById('modalCancelar'));
+    var modalInfoCliente = new bootstrap.Modal(document.getElementById('modalInfoCliente'));
+    var modalResumo = new bootstrap.Modal(document.getElementById('modalResumoVenda'));
+
+    var dadosVendas = {
+        {% for v in vendas + vencimentos + canceladas %}
+        "{{ v.id }}": {
+            "cliente_nome": "{{ v.cliente.nome }}",
+            "data": "{{ v.data.strftime('%d/%m/%Y') }}",
+            "forma_pagamento": "{{ v.forma_pagamento }}",
+            "status_pgto": "{{ v.status_pagamento }}",
+            "status_nf": "{{ v.status_nf }}",
+            "num_nf": "{{ v.numero_nf or '' }}",
+            "status_boleto": "{{ v.status_boleto or '' }}",
+            "num_boleto": "{{ v.numero_boleto or '' }}",
+            "status_envio": "{{ v.status_envio }}",
+            "data_vencimento": "{{ v.data_vencimento.strftime('%Y-%m-%d') if v.data_vencimento else '' }}",
+            "total_formatado": "{{ v.valor_total | currency }}",
+            "observacao": "{{ v.observacao or '' }}",
+            "itens": [
+                {% for item in v.itens %}
+                { "nome": "{{ item.produto.nome }}", "qtd": {{ item.quantidade }}, "total": "{{ item.valor_total | currency }}" }
+                {% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    };
+
+    function verDetalhesVenda(id) {
+        if (!dadosVendas[id]) return;
+        var dados = dadosVendas[id];
+
+        document.getElementById('resumo_id').innerText = id;
+        document.getElementById('resumo_cliente').innerText = dados.cliente_nome;
+        document.getElementById('resumo_data').innerText = dados.data;
+        document.getElementById('resumo_total').innerText = dados.total_formatado;
+        document.getElementById('resumo_pagamento').innerText = dados.forma_pagamento;
+        document.getElementById('resumo_status').innerText = dados.status_pgto;
+        document.getElementById('resumo_nf_txt').innerText = dados.num_nf || '-';
+        document.getElementById('resumo_boleto_txt').innerText = dados.num_boleto || '-';
+        
+        if(dados.observacao) {
+            document.getElementById('resumo_obs').innerText = dados.observacao;
+            document.getElementById('resumo_obs_box').style.display = 'block';
+        } else {
+            document.getElementById('resumo_obs_box').style.display = 'none';
+        }
+
+        var tbody = document.getElementById('resumo_itens_lista');
+        tbody.innerHTML = "";
+        dados.itens.forEach(function(item) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = `<td class="ps-3">${item.nome}</td><td class="text-center">${item.qtd}</td><td class="text-end pe-3 text-muted">${item.total}</td>`;
+            tbody.appendChild(tr);
+        });
+        modalResumo.show();
+    }
+
+    function abrirModalGerenciar(id) {
+        if (!dadosVendas[id]) return;
+        var dados = dadosVendas[id];
+        
+        document.getElementById('edit_venda_id').value = id;
+        document.getElementById('edit_venda_id_display').innerText = id;
+        
+        document.getElementById('edit_forma_pagamento').value = dados.forma_pagamento;
+        document.getElementById('edit_status_pagamento').value = dados.status_pgto;
+        document.getElementById('edit_status_envio').value = dados.status_envio;
+        document.getElementById('edit_data_vencimento').value = dados.data_vencimento;
+        
+        // NF
+        document.getElementById('edit_status_nf').value = dados.status_nf;
+        document.getElementById('edit_numero_nf').value = dados.num_nf;
+        
+        // Boleto
+        var statusBoleto = (dados.status_boleto && dados.status_boleto !== 'None') ? dados.status_boleto : 'Falta Boleto';
+        document.getElementById('edit_status_boleto').value = statusBoleto;
+        document.getElementById('edit_numero_boleto').value = dados.num_boleto;
+
+        verificarFormaPagamento();
+        toggleInputNF();
+        toggleInputBoleto();
+        modalGerenciar.show();
+    }
+
+    function verificarFormaPagamento() {
+        var forma = document.getElementById('edit_forma_pagamento').value;
+        var divBoleto = document.getElementById('div_boleto');
+        divBoleto.style.display = (forma === 'BOLETO') ? 'block' : 'none';
+    }
+
+    function toggleInputNF() {
+        var status = document.getElementById('edit_status_nf').value;
+        var divInput = document.getElementById('div_nf_input');
+        divInput.style.display = (status === 'NF Feita') ? 'block' : 'none';
+    }
+    
+    function toggleInputBoleto() {
+        // Logica simplificada: Boleto é visivel se Pagamento = Boleto
+    }
+
+    // --- Nova Venda e Utilitários ---
+    function adicionarItemVenda() {
+        var c = document.getElementById('lista-produtos-venda');
+        var t = document.getElementById('template-item-venda').firstElementChild;
+        c.appendChild(t.cloneNode(true));
+    }
+    function removerItem(btn) { btn.closest('.item-row').remove(); calcularTotalVenda(); }
+    
+    function atualizarPrecoEEstoque(select) {
+        var p = select.options[select.selectedIndex];
+        var row = select.closest('.item-row');
+        row.querySelector('.valor-input').value = p.getAttribute('data-preco') ? parseFloat(p.getAttribute('data-preco')).toFixed(2).replace('.',',') : '0,00';
+        var stock = p.getAttribute('data-estoque');
+        var badge = row.querySelector('.stock-display');
+        badge.innerText = stock + " un";
+        badge.className = parseInt(stock) <= 0 ? "stock-display badge bg-danger text-white" : "stock-display text-muted";
+        calcularTotalVenda();
+    }
+    
+    function calcularTotalVenda() {
+        let t = 0;
+        document.querySelectorAll('#lista-produtos-venda .item-row').forEach(r => {
+            let q = parseFloat(r.querySelector('.qtd-input').value)||0;
+            let v = parseFloat(r.querySelector('.valor-input').value.replace('R$','').replaceAll('.','').replace(',','.'))||0;
+            t += q*v;
+        });
+        document.getElementById('total-venda-display').innerText = t.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    }
+
+    function abrirModalNovaVenda() {
+        document.getElementById('lista-produtos-venda').innerHTML = "";
+        adicionarItemVenda();
+        var hoje = new Date(); hoje.setDate(hoje.getDate() + 28);
+        document.querySelector('input[name="data_vencimento"]').valueAsDate = hoje;
+        modalNova.show();
+    }
+    
+    function verDetalhesClienteSelecionado() {
+        var sel = document.getElementById('cliente_select');
+        var opt = sel.options[sel.selectedIndex];
+        if(!opt || opt.value=="") { alert("Selecione um cliente."); return; }
+        document.getElementById('info_nome_cliente').innerText = opt.getAttribute('data-nome');
+        document.getElementById('info_doc_cliente').innerText = opt.getAttribute('data-doc')||'-';
+        document.getElementById('info_tel_cliente').innerText = opt.getAttribute('data-tel')||'-';
+        document.getElementById('info_obs_cliente').innerText = opt.getAttribute('data-obs')||'Sem obs.';
+        modalInfoCliente.show();
+    }
+    
+    function abrirModalCancelar(id) { document.getElementById('cancel_venda_id').value = id; modalCancelar.show(); }
+</script>
+{% endblock %}

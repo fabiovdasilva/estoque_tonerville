@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintControl - Sistema Unificado</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* --- CSS UNIFICADO (Todas as classes de ambos os arquivos) --- */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #17a2b8;
+            --purple-color: #9b59b6;
+            --dark-color: #343a40;
+            --light-color: #f8f9fa;
+        }
+        
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa; color: #333; overflow-x: hidden; }
+        
+        /* Sidebar */
+        .sidebar { background: linear-gradient(180deg, var(--primary-color) 0%, #1a252f 100%); min-height: 100vh; color: white; padding: 0; position: fixed; width: 250px; z-index: 1000; box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; }
+        .sidebar .nav-link { color: rgba(255, 255, 255, 0.8); padding: 12px 20px; border-left: 4px solid transparent; transition: all 0.3s ease; font-weight: 500; cursor: pointer; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: white; background-color: rgba(255, 255, 255, 0.1); border-left-color: var(--secondary-color); }
+        .sidebar .nav-link i { width: 24px; text-align: center; margin-right: 10px; font-size: 1.1rem; }
+        .sidebar-brand { padding: 20px; background-color: rgba(0, 0, 0, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .sidebar-brand h3 { margin: 0; font-weight: 700; color: white; }
+        .main-content { margin-left: 250px; padding: 20px; transition: all 0.3s; min-height: 100vh; }
+        
+        /* Cards & UI */
+        .card { border-radius: 10px; border: none; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); margin-bottom: 24px; transition: transform 0.3s ease; }
+        .card:hover { transform: translateY(-5px); }
+        .card-header { background-color: white; border-bottom: 1px solid #eee; font-weight: 600; padding: 15px 20px; border-radius: 10px 10px 0 0 !important; }
+        .card-title { color: var(--primary-color); font-weight: 600; margin-bottom: 0; }
+        .page-header { padding-bottom: 15px; margin-bottom: 25px; border-bottom: 1px solid #eee; }
+        .page-title { color: var(--primary-color); font-weight: 700; margin-bottom: 5px; }
+        .page-subtitle { color: #6c757d; font-size: 1rem; }
+        .filter-bar { background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05); }
+        .btn-action { border-radius: 6px; padding: 8px 16px; font-weight: 500; transition: all 0.3s; }
+        
+        /* Status Badges Comuns */
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .status-pago, .status-disponivel, .status-ativo { background-color: rgba(39, 174, 96, 0.15); color: var(--success-color); border: 1px solid rgba(39, 174, 96, 0.3); } /* Verde */
+        .status-pendente, .status-locado { background-color: rgba(243, 156, 18, 0.15); color: var(--warning-color); border: 1px solid rgba(243, 156, 18, 0.3); } /* Laranja */
+        .status-atrasado, .status-manutencao { background-color: rgba(231, 76, 60, 0.15); color: var(--danger-color); border: 1px solid rgba(231, 76, 60, 0.3); } /* Vermelho */
+        .status-ativo { background-color: rgba(52, 152, 219, 0.15); color: var(--secondary-color); border: 1px solid rgba(52, 152, 219, 0.3); } /* Azul (override) */
+        
+        /* Dashboard Specifics (File 9ccfe2) */
+        .dashboard-stat { text-align: center; padding: 25px 15px; border-radius: 10px; color: white; margin-bottom: 24px; position: relative; overflow: hidden; }
+        .dashboard-stat::before { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 200%; background: rgba(255, 255, 255, 0.1); transform: rotate(30deg); }
+        .stat-vendas { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .stat-locacao { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .stat-estoque { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .stat-alertas { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .stat-contratos { background: linear-gradient(135deg, #8e44ad, #732d91); }
+        .stat-saida { background: linear-gradient(135deg, #16a085, #0e6655); }
+        .alert-badge { position: absolute; top: -8px; right: -8px; background-color: var(--danger-color); color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+        .product-low { background-color: rgba(243, 156, 18, 0.08) !important; border-left: 4px solid var(--warning-color) !important; }
+        .product-critical { background-color: rgba(231, 76, 60, 0.08) !important; border-left: 4px solid var(--danger-color) !important; }
+        
+        /* Contratos & Locação ABC (File 9ccfe2) */
+        .contrato-card { border-left: 5px solid var(--purple-color); transition: all 0.3s; cursor: pointer; }
+        .cliente-a { border-left: 5px solid var(--success-color) !important; }
+        .cliente-b { border-left: 5px solid var(--warning-color) !important; }
+        .cliente-c { border-left: 5px solid var(--danger-color) !important; }
+        .abc-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .abc-a { background-color: rgba(39, 174, 96, 0.15); color: var(--success-color); border: 1px solid rgba(39, 174, 96, 0.3); }
+        .abc-b { background-color: rgba(243, 156, 18, 0.15); color: var(--warning-color); border: 1px solid rgba(243, 156, 18, 0.3); }
+        .abc-c { background-color: rgba(231, 76, 60, 0.15); color: var(--danger-color); border: 1px solid rgba(231, 76, 60, 0.3); }
+        .contrato-detail { background-color: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+        .valor-contrato { font-size: 1.8rem; font-weight: 700; color: var(--purple-color); }
+        .info-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .tag-contador { position: absolute; top: 10px; right: 10px; background-color: var(--secondary-color); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+        .progress-abc { height: 20px; border-radius: 10px; overflow: hidden; }
+        .progress-abc .progress-bar { font-size: 12px; font-weight: 600; line-height: 20px; }
+        .saida-card { border-left: 5px solid var(--success-color); }
+        
+        /* Vendas & Impressoras Specifics (File 57ce75) */
+        .badge-nf, .badge-pagamento { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-nf-falta { background-color: rgba(231, 76, 60, 0.1); color: var(--danger-color); border: 1px solid rgba(231, 76, 60, 0.3); }
+        .badge-nf-feita { background-color: rgba(39, 174, 96, 0.1); color: var(--success-color); border: 1px solid rgba(39, 174, 96, 0.3); }
+        .badge-nf-recibo { background-color: rgba(149, 165, 166, 0.1); color: #7f8c8d; border: 1px solid rgba(149, 165, 166, 0.3); }
+        .badge-pix { background-color: rgba(52, 152, 219, 0.1); color: var(--secondary-color); border: 1px solid rgba(52, 152, 219, 0.3); }
+        .badge-boleto { background-color: rgba(155, 89, 182, 0.1); color: #9b59b6; border: 1px solid rgba(155, 89, 182, 0.3); }
+        .badge-locacao { background-color: rgba(243, 156, 18, 0.1); color: var(--warning-color); border: 1px solid rgba(243, 156, 18, 0.3); }
+        .nav-tabs .nav-link { color: #6c757d; font-weight: 500; border: none; padding: 10px 20px; }
+        .nav-tabs .nav-link.active { color: var(--secondary-color); border-bottom: 3px solid var(--secondary-color); background-color: transparent; }
+        .impressora-card { border-left: 5px solid var(--secondary-color); transition: all 0.3s; }
+        .impressora-mini-card { background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 10px; border: 1px solid #e9ecef; }
+        .impressora-status { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+        /* Timeline & Shared */
+        .timeline { position: relative; padding-left: 30px; }
+        .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background-color: #e0e0e0; }
+        .timeline-item { position: relative; margin-bottom: 20px; }
+        .timeline-item::before { content: ''; position: absolute; left: -23px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background-color: var(--secondary-color); border: 2px solid white; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); }
+        .table th { font-weight: 600; color: var(--primary-color); border-top: none; border-bottom: 2px solid #dee2e6; }
+        .table-responsive { border-radius: 10px; overflow: hidden; }
+        
+        /* Layout Mobile/Navigation */
+        .page-content { display: none; }
+        .page-content.active { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .sidebar-toggle { position: fixed; top: 20px; left: 20px; z-index: 1100; background-color: var(--primary-color); color: white; border: none; border-radius: 5px; padding: 8px 12px; display: none; }
+        @media (max-width: 768px) {
+            .sidebar { margin-left: -250px; }
+            .sidebar.active { margin-left: 0; }
+            .main-content { margin-left: 0; }
+            .main-content.active { margin-left: 250px; }
+            .sidebar-toggle { display: block; }
+        }
+        
+        .modal-lg-custom { max-width: 900px; }
+        .autocomplete-suggestions { position: absolute; background: white; border: 1px solid #ddd; max-height: 200px; overflow-y: auto; z-index: 1000; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); border-radius: 0 0 5px 5px; }
+        .autocomplete-suggestion { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f5f5f5; }
+        .autocomplete-suggestion:hover { background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <h3><i class="fas fa-print"></i> PrintControl</h3>
+            <small class="text-muted">Sistema Unificado</small>
+        </div>
+        <div class="sidebar-nav mt-4">
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link active" data-page="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="estoque"><i class="fas fa-boxes"></i> Estoque <span class="alert-badge">3</span></a></li>
+                <li class="nav-item"><a class="nav-link" data-page="vendas"><i class="fas fa-shopping-cart"></i> Vendas</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="saida-locacao"><i class="fas fa-box-open"></i> Saída Locação</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="locacoes-ativas"><i class="fas fa-calendar-alt"></i> Locações Ativas</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="contratos-locacao"><i class="fas fa-file-contract"></i> Contratos <span class="notification-dot"></span></a></li>
+                <li class="nav-item"><a class="nav-link" data-page="entrada"><i class="fas fa-arrow-down"></i> Entrada</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="impressoras"><i class="fas fa-print"></i> Impressoras</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="relatorios"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
+                <li class="nav-item mt-4"><a class="nav-link" data-page="configuracoes"><i class="fas fa-cog"></i> Configurações</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="main-content" id="mainContent">
+        
+        <div id="dashboard-page" class="page-content active">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><h1 class="page-title">Dashboard</h1><p class="page-subtitle">Visão geral do sistema</p></div>
+                    <div><button class="btn btn-primary btn-action"><i class="fas fa-sync-alt"></i> Atualizar</button></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-xl-2 col-lg-4 col-md-6"><div class="dashboard-stat stat-vendas"><div class="fs-2 fw-bold">R$ 8.245,00</div><div class="fs-6">Vendas do Mês</div><i class="fas fa-cart-arrow-down fs-4 mt-3"></i></div></div>
+                <div class="col-xl-2 col-lg-4 col-md-6"><div class="dashboard-stat stat-locacao"><div class="fs-2 fw-bold">R$ 3.150,00</div><div class="fs-6">Locação Ativa</div><i class="fas fa-calendar-check fs-4 mt-3"></i></div></div>
+                <div class="col-xl-2 col-lg-4 col-md-6"><div class="dashboard-stat stat-estoque"><div class="fs-2 fw-bold">142</div><div class="fs-6">Itens em Estoque</div><i class="fas fa-boxes fs-4 mt-3"></i></div></div>
+                <div class="col-xl-2 col-lg-4 col-md-6"><div class="dashboard-stat stat-alertas"><div class="fs-2 fw-bold">7</div><div class="fs-6">Alertas</div><i class="fas fa-exclamation-triangle fs-4 mt-3"></i></div></div>
+                <div class="col-xl-2 col-lg-4 col-md-6"><div class="dashboard-stat stat-contratos"><div class="fs-2 fw-bold">R$ 18.500,00</div><div class="fs-6">Contratos Ativos</div><i class="fas fa-file-contract fs-4 mt-3"></i></div></div>
+                <div class="col-xl-2 col-lg-4 col-md-6"><div class="dashboard-stat stat-saida"><div class="fs-2 fw-bold">24</div><div class="fs-6">Saídas/Mês</div><i class="fas fa-box-open fs-4 mt-3"></i></div></div>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center"><h5 class="card-title mb-0">Vencimentos Próximos</h5><span class="badge bg-danger">3 atrasados</span></div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead><tr><th>Cliente</th><th>Produto</th><th>Vencimento</th><th>Valor</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><strong>DESPACHANTE GUERREIRO</strong></td><td>TONER 2854</td><td>26/12/2025</td><td>R$ 360,00</td><td><span class="status-badge status-atrasado">Atrasado</span></td></tr>
+                                        <tr><td><strong>MARCIO LEAL</strong></td><td>TN 3612 COMP</td><td>29/12/2025</td><td>R$ 390,00</td><td><span class="status-badge status-atrasado">Atrasado</span></td></tr>
+                                        <tr><td><strong>Terabyte</strong></td><td>TN 660/2870/2640</td><td>29/12/2025</td><td>R$ 140,00</td><td><span class="status-badge status-pendente">Pendente</span></td></tr>
+                                        <tr><td><strong>Pichau</strong></td><td>T03 COMP.</td><td>05/01/2026</td><td>R$ 3.795,00</td><td><span class="status-badge status-pendente">Pendente</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer text-end"><a href="#" class="btn btn-sm btn-outline-primary" data-page="vendas">Ver todos</a></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Produtos Mais Vendidos</h5></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead><tr><th>Produto</th><th>Quantidade</th><th>Faturamento</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>TONER 2854</td><td>24 unidades</td><td>R$ 2.160,00</td></tr>
+                                        <tr><td>TN 3612 COMP</td><td>18 unidades</td><td>R$ 3.510,00</td></tr>
+                                        <tr><td>T03 COMP.</td><td>10 unidades</td><td>R$ 12.650,00</td></tr>
+                                        <tr><td>F218 - HP</td><td>8 unidades</td><td>R$ 640,00</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center"><h5 class="card-title mb-0">Estoque Baixo</h5><span class="badge bg-warning">5 itens</span></div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead><tr><th>Produto</th><th>Estoque Atual</th><th>Mínimo</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        <tr class="product-critical"><td>TONER 2854</td><td>2</td><td>10</td><td><span class="badge bg-danger">Crítico</span></td></tr>
+                                        <tr class="product-low"><td>TN 3612 COMP</td><td>5</td><td>15</td><td><span class="badge bg-warning">Baixo</span></td></tr>
+                                        <tr class="product-low"><td>F218 - HP</td><td>3</td><td>8</td><td><span class="badge bg-warning">Baixo</span></td></tr>
+                                        <tr><td>204 - CILINDRO</td><td>12</td><td>10</td><td><span class="badge bg-success">OK</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer text-end"><a href="#" class="btn btn-sm btn-outline-primary" data-page="estoque">Ver todos</a></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Movimentações Recentes</h5></div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead><tr><th>Data</th><th>Tipo</th><th>Produto</th><th>Qtd</th><th>Cliente/Fornecedor</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>05/01/2026</td><td><span class="badge bg-success">Venda</span></td><td>T03 COMP.</td><td>3</td><td>Pichau</td></tr>
+                                        <tr><td>29/12/2025</td><td><span class="badge bg-info">Locação</span></td><td>Impressora HP M428</td><td>1</td><td>Escritório Central</td></tr>
+                                        <tr><td>29/12/2025</td><td><span class="badge bg-success">Venda</span></td><td>TN 3612 COMP</td><td>2</td><td>MARCIO LEAL</td></tr>
+                                        <tr><td>29/12/2025</td><td><span class="badge bg-primary">Entrada</span></td><td>TONER 2854</td><td>50</td><td>Fornecedor X</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Ações Rápidas</h5></div>
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#novaVendaModal"><i class="fas fa-cart-plus"></i> Nova Venda</button>
+                                <button class="btn btn-info btn-action" data-page="locacoes-ativas"><i class="fas fa-calendar-plus"></i> Nova Locação</button>
+                                <button class="btn btn-warning btn-action" data-bs-toggle="modal" data-bs-target="#novaSaidaModal"><i class="fas fa-box-open"></i> Saída para Locação</button>
+                                <button class="btn btn-purple btn-action" data-bs-toggle="modal" data-bs-target="#novoContratoModal" style="background-color: #9b59b6; border-color: #9b59b6; color: white;"><i class="fas fa-file-contract"></i> Novo Contrato</button>
+                                <button class="btn btn-success btn-action" data-bs-toggle="modal" data-bs-target="#novaEntradaModal"><i class="fas fa-arrow-down"></i> Entrada Estoque</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="estoque-page" class="page-content">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><h1 class="page-title">Controle de Estoque</h1><p class="page-subtitle">Gerencie seus produtos e insumos</p></div>
+                    <div>
+                        <button class="btn btn-primary btn-action me-2" data-bs-toggle="modal" data-bs-target="#novoProdutoModal"><i class="fas fa-plus"></i> Novo Produto</button>
+                        <button class="btn btn-warning btn-action" data-bs-toggle="modal" data-bs-target="#ajusteEstoqueModal"><i class="fas fa-adjust"></i> Ajuste de Estoque</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filter-bar">
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">Buscar Produto</label><input type="text" class="form-control" placeholder="Nome ou código" id="buscarProduto"></div>
+                    <div class="col-md-3"><label class="form-label">Categoria</label><select class="form-select"><option selected>Todas</option><option>Toner</option><option>Tampa</option><option>Cilindro</option><option>Kit Manutenção</option><option>Impressora</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Status Estoque</label><select class="form-select"><option selected>Todos</option><option>Estoque Crítico</option><option>Estoque Baixo</option><option>Estoque Normal</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Ordenar por</label><select class="form-select"><option selected>Nome (A-Z)</option><option>Quantidade (Menor-Maior)</option><option>Última Movimentação</option></select></div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col text-end">
+                        <button class="btn btn-outline-primary me-2"><i class="fas fa-filter"></i> Aplicar Filtros</button>
+                        <button class="btn btn-outline-secondary"><i class="fas fa-redo"></i> Limpar</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center"><h5 class="card-title mb-0">Produtos em Estoque</h5><div class="text-muted">Total: 142 itens</div></div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="tabelaEstoque">
+                            <thead><tr><th width="50">Código</th><th>Produto</th><th>Categoria</th><th>Estoque Atual</th><th>Estoque Mínimo</th><th>Valor Unitário</th><th>Valor Total</th><th>Última Movimentação</th><th>Status</th><th width="120">Ações</th></tr></thead>
+                            <tbody>
+                                <tr class="product-critical"><td><strong>P001</strong></td><td><strong>TONER 2854</strong><br><small class="text-muted">Para impressora HP</small></td><td>Toner</td><td><strong>2</strong></td><td>10</td><td>R$ 90,00</td><td>R$ 180,00</td><td>29/12/2025</td><td><span class="badge bg-danger">Crítico</span></td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="vendas-page" class="page-content">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><h1 class="page-title">Controle de Vendas</h1><p class="page-subtitle">Gerencie vendas e acompanhe vencimentos</p></div>
+                    <div><button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#novaVendaModal"><i class="fas fa-cart-plus"></i> Nova Venda</button></div>
+                </div>
+            </div>
+            
+            <ul class="nav nav-tabs mb-4" id="vendasTabs">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-vendas-ativas">Vendas Ativas</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-vencimentos">Vencimentos</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-historico">Histórico</a></li>
+            </ul>
+            
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="tab-vendas-ativas">
+                    <div class="filter-bar">
+                        <div class="row g-3">
+                            <div class="col-md-3"><label class="form-label">Período</label><select class="form-select"><option selected>Últimos 30 dias</option></select></div>
+                            <div class="col-md-3"><label class="form-label">Cliente</label><input type="text" class="form-control" placeholder="Nome do cliente"></div>
+                            <div class="col-md-3"><label class="form-label">Status Pagamento</label><select class="form-select"><option selected>Todos</option><option>Pago</option><option>Pendente</option></select></div>
+                            <div class="col-md-3"><label class="form-label">Status NF</label><select class="form-select"><option selected>Todos</option></select></div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col text-end">
+                                <button class="btn btn-primary me-2"><i class="fas fa-filter"></i> Aplicar Filtros</button>
+                                <button class="btn btn-outline-secondary"><i class="fas fa-redo"></i> Limpar</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center"><h5 class="card-title mb-0">Vendas Recentes</h5><div class="text-muted">Total: R$ 8.245,00 este mês</div></div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead><tr><th>Data</th><th>Cliente</th><th>Produto</th><th>Quantidade</th><th>Valor Unit.</th><th>Valor Total</th><th>Pagamento</th><th>Vencimento</th><th>NF</th><th>Status</th><th>Nº Boleto</th><th width="100">Ações</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>05/01/2026</td><td><strong>Pichau</strong></td><td>T03 COMP.</td><td>3</td><td>R$ 1.265,00</td><td><strong>R$ 3.795,00</strong></td><td><span class="badge-pagamento badge-boleto">BOLETO</span></td><td class="text-warning"><strong>05/01/2026</strong></td><td><span class="badge-nf badge-nf-feita">NF Feita</span></td><td><span class="status-badge status-pendente">Falta Enviar</span></td><td>B001256</td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-success"><i class="fas fa-check"></i></button></td></tr>
+                                        <tr><td>29/12/2025</td><td><strong>MARCIO LEAL</strong></td><td>TN 3612 COMP</td><td>2</td><td>R$ 195,00</td><td><strong>R$ 390,00</strong></td><td><span class="badge-pagamento badge-pix">PIX</span></td><td class="text-danger"><strong>29/12/2025</strong></td><td><span class="badge-nf badge-nf-feita">NF Feita</span></td><td><span class="status-badge status-atrasado">Falta Boleto</span></td><td>-</td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-success"><i class="fas fa-check"></i></button></td></tr>
+                                        <tr><td>29/12/2025</td><td><strong>Terabyte</strong></td><td>TN 660/2870/2640</td><td>2</td><td>R$ 70,00</td><td><strong>R$ 140,00</strong></td><td><span class="badge-pagamento badge-boleto">BOLETO</span></td><td class="text-danger"><strong>29/12/2025</strong></td><td><span class="badge-nf badge-nf-falta">Falta NF</span></td><td><span class="status-badge status-atrasado">Enviado</span></td><td>B001254</td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-success"><i class="fas fa-check"></i></button></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="tab-vencimentos">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Vencimentos Próximos</h5></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead><tr><th>Cliente</th><th>Produto</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+                                    <tbody>
+                                        <tr class="table-danger"><td><strong>DESPACHANTE GUERREIRO</strong></td><td>TONER 2854</td><td><strong>26/12/2025</strong> <span class="badge bg-danger">5 dias atrasado</span></td><td>R$ 360,00</td><td><span class="status-badge status-atrasado">Atrasado</span></td><td><button class="btn btn-sm btn-success"><i class="fas fa-check"></i> Pago</button></td></tr>
+                                        <tr class="table-danger"><td><strong>MARCIO LEAL</strong></td><td>TN 3612 COMP</td><td><strong>29/12/2025</strong> <span class="badge bg-danger">2 dias atrasado</span></td><td>R$ 390,00</td><td><span class="status-badge status-atrasado">Atrasado</span></td><td><button class="btn btn-sm btn-success"><i class="fas fa-check"></i> Pago</button></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="tab-historico">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Histórico Completo de Vendas</h5></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead><tr><th>Data</th><th>Cliente</th><th>Produtos</th><th>Valor Total</th><th>Pagamento</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>05/01/2026</td><td><strong>Pichau</strong></td><td>T03 COMP. (3 un)</td><td>R$ 3.795,00</td><td>Boleto</td><td><span class="status-badge status-pendente">Pendente</span></td></tr>
+                                        <tr><td>29/12/2025</td><td><strong>MARCIO LEAL</strong></td><td>TN 3612 COMP (2 un)</td><td>R$ 390,00</td><td>PIX</td><td><span class="status-badge status-atrasado">Atrasado</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="saida-locacao-page" class="page-content">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><h1 class="page-title">Saída para Locação</h1><p class="page-subtitle">Registre saídas de estoque para uso em locação</p></div>
+                    <div><button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#novaSaidaModal"><i class="fas fa-box-open"></i> Nova Saída</button></div>
+                </div>
+            </div>
+            
+            <div class="filter-bar">
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">Período</label><select class="form-select"><option selected>Este mês</option><option>Mês anterior</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Cliente/Local</label><input type="text" class="form-control" placeholder="Onde foi utilizado"></div>
+                    <div class="col-md-3"><label class="form-label">Produto</label><input type="text" class="form-control" placeholder="Nome do produto"></div>
+                    <div class="col-md-3"><label class="form-label">Tipo</label><select class="form-select"><option selected>Todos</option></select></div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col text-end">
+                        <button class="btn btn-primary me-2"><i class="fas fa-filter"></i> Aplicar Filtros</button>
+                        <button class="btn btn-outline-secondary"><i class="fas fa-redo"></i> Limpar</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center"><h5 class="card-title mb-0">Saídas Registradas</h5><div class="text-muted">Total: 24 saídas este mês</div></div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead><tr><th>Data</th><th>Produto</th><th>Quantidade</th><th>Cliente/Local</th><th>Impressora</th><th>Observação</th><th>Responsável</th><th width="100">Ações</th></tr></thead>
+                            <tbody>
+                                <tr class="saida-card"><td>05/01/2026</td><td><strong>Toner CF258X</strong><br><small>Para locação</small></td><td><strong>2</strong></td><td><strong>Escritório Central</strong></td><td>HP M428 (MLT001)</td><td>Troca preventiva</td><td>João Silva</td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></td></tr>
+                                <tr class="saida-card"><td>03/01/2026</td><td><strong>Fusor HP 428</strong><br><small>Peça de reposição</small></td><td><strong>1</strong></td><td><strong>Clínica Saúde</strong></td><td>HP M428 (MLT005)</td><td>Troca por defeito</td><td>Maria Santos</td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></td></tr>
+                                <tr class="saida-card"><td>02/01/2026</td><td><strong>Kit Manutenção HP</strong><br><small>Kit completo</small></td><td><strong>1</strong></td><td><strong>Escola Municipal</strong></td><td>HP M428 (MLT003)</td><td>Manutenção programada</td><td>Carlos Oliveira</td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></td></tr>
+                                <tr class="saida-card"><td>29/12/2025</td><td><strong>Toner Colorido EPSON</strong><br><small>CMYK completo</small></td><td><strong>4</strong></td><td><strong>Agência Publicitária</strong></td><td>Epson L380 (MLT002)</td><td>Reposição de estoque cliente</td><td>Ana Pereira</td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Produtos Mais Utilizados</h5></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead><tr><th>Produto</th><th>Quantidade</th><th>% do Total</th><th>Clientes Principais</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>Toner CF258X</td><td>12 unidades</td><td>24%</td><td>Escritório Central, Clínica Saúde</td></tr>
+                                        <tr><td>Fusor HP 428</td><td>8 unidades</td><td>16%</td><td>Agência Publicitária, Escola</td></tr>
+                                        <tr><td>Kit Manutenção HP</td><td>6 unidades</td><td>12%</td><td>Vários clientes</td></tr>
+                                        <tr><td>Toner Colorido EPSON</td><td>5 unidades</td><td>10%</td><td>Agência Publicitária</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Impacto no Estoque</h5></div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2"><span>Total de saídas (mês):</span><strong>24 itens</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span>Valor estimado:</span><strong>R$ 1.850,00</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span>Produtos com maior saída:</span><strong>Toner CF258X</strong></div>
+                                <div class="d-flex justify-content-between"><span>Cliente com maior consumo:</span><strong>Escritório Central</strong></div>
+                            </div>
+                            <div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> <strong>Atenção:</strong> 3 produtos estão com estoque crítico devido às saídas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="locacoes-ativas-page" class="page-content">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><h1 class="page-title">Locações Ativas</h1><p class="page-subtitle">Gerencie as locações em andamento</p></div>
+                    <div><button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#novaLocacaoModal"><i class="fas fa-calendar-plus"></i> Nova Locação</button></div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Curva ABC de Clientes - Locação</h5></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead><tr><th>Classificação</th><th>Cliente</th><th>Valor Total</th><th>% Acumulado</th><th>Quant. Impressoras</th><th>Status</th></tr></thead>
+                                            <tbody>
+                                                <tr class="cliente-a"><td><span class="abc-badge abc-a">A</span></td><td><strong>Hospital Regional</strong></td><td>R$ 8.500,00</td><td>46%</td><td>12</td><td><span class="status-badge status-ativo">Ativo</span></td></tr>
+                                                <tr class="cliente-a"><td><span class="abc-badge abc-a">A</span></td><td><strong>Universidade Federal</strong></td><td>R$ 6.200,00</td><td>79%</td><td>8</td><td><span class="status-badge status-ativo">Ativo</span></td></tr>
+                                                <tr class="cliente-b"><td><span class="abc-badge abc-b">B</span></td><td><strong>Rede de Farmácias</strong></td><td>R$ 2.100,00</td><td>90%</td><td>5</td><td><span class="status-badge status-ativo">Ativo</span></td></tr>
+                                                <tr class="cliente-b"><td><span class="abc-badge abc-b">B</span></td><td><strong>Escritório Central</strong></td><td>R$ 1.200,00</td><td>97%</td><td>3</td><td><span class="status-badge status-ativo">Ativo</span></td></tr>
+                                                <tr class="cliente-c"><td><span class="abc-badge abc-c">C</span></td><td><strong>Clínica Saúde</strong></td><td>R$ 500,00</td><td>100%</td><td>1</td><td><span class="status-badge status-ativo">Ativo</span></td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-header"><h6 class="card-title mb-0">Distribuição ABC</h6></div>
+                                        <div class="card-body">
+                                            <div class="mb-3"><h6>Classe A (80% do valor)</h6><div class="progress progress-abc mb-3"><div class="progress-bar bg-success" role="progressbar" style="width: 80%" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100">2 clientes</div></div></div>
+                                            <div class="mb-3"><h6>Classe B (15% do valor)</h6><div class="progress progress-abc mb-3"><div class="progress-bar bg-warning" role="progressbar" style="width: 15%" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100">2 clientes</div></div></div>
+                                            <div class="mb-3"><h6>Classe C (5% do valor)</h6><div class="progress progress-abc mb-3"><div class="progress-bar bg-danger" role="progressbar" style="width: 5%" aria-valuenow="5" aria-valuemin="0" aria-valuemax="100">1 cliente</div></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filter-bar">
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">Status</label><select class="form-select"><option selected>Ativas</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Cliente</label><input type="text" class="form-control" placeholder="Nome do cliente"></div>
+                    <div class="col-md-3"><label class="form-label">Classificação ABC</label><select class="form-select"><option selected>Todas</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Valor Mensal</label><select class="form-select"><option selected>Todos</option></select></div>
+                </div>
+                <div class="row mt-3"><div class="col text-end"><button class="btn btn-primary me-2"><i class="fas fa-filter"></i> Aplicar Filtros</button> <button class="btn btn-outline-secondary"><i class="fas fa-redo"></i> Limpar</button></div></div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center"><h5 class="card-title mb-0">Locações Ativas</h5><div class="text-muted">Total: 5 locações ativas | Valor mensal: R$ 3.150,00</div></div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead><tr><th>Cliente</th><th>Classificação</th><th>Valor Mensal</th><th>Qtd. Impressoras</th><th>Início</th><th>Próximo Vencimento</th><th>Status</th><th>Contrato</th><th width="100">Ações</th></tr></thead>
+                            <tbody>
+                                <tr><td><strong>Hospital Regional</strong></td><td><span class="abc-badge abc-a">A</span></td><td><strong>R$ 2.500,00</strong></td><td>12</td><td>15/10/2025</td><td class="text-warning"><strong>15/01/2026</strong></td><td><span class="status-badge status-ativo">Ativa</span></td><td>CT2025001</td><td><button class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-info" title="Ver Detalhes"><i class="fas fa-eye"></i></button></td></tr>
+                                <tr><td><strong>Universidade Federal</strong></td><td><span class="abc-badge abc-a">A</span></td><td><strong>R$ 1.800,00</strong></td><td>8</td><td>01/12/2025</td><td><strong>01/01/2026</strong></td><td><span class="status-badge status-ativo">Ativa</span></td><td>CT2025002</td><td><button class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-info" title="Ver Detalhes"><i class="fas fa-eye"></i></button></td></tr>
+                                <tr><td><strong>Rede de Farmácias</strong></td><td><span class="abc-badge abc-b">B</span></td><td><strong>R$ 750,00</strong></td><td>5</td><td>10/11/2025</td><td class="text-danger"><strong>10/01/2026</strong></td><td><span class="status-badge status-atrasado">Atrasada</span></td><td>CT2025003</td><td><button class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-info" title="Ver Detalhes"><i class="fas fa-eye"></i></button></td></tr>
+                                <tr><td><strong>Escritório Central</strong></td><td><span class="abc-badge abc-b">B</span></td><td><strong>R$ 450,00</strong></td><td>3</td><td>15/12/2025</td><td><strong>15/01/2026</strong></td><td><span class="status-badge status-ativo">Ativa</span></td><td>CT2025004</td><td><button class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-info" title="Ver Detalhes"><i class="fas fa-eye"></i></button></td></tr>
+                                <tr><td><strong>Clínica Saúde</strong></td><td><span class="abc-badge abc-c">C</span></td><td><strong>R$ 200,00</strong></td><td>1</td><td>05/01/2026</td><td><strong>05/02/2026</strong></td><td><span class="status-badge status-ativo">Ativa</span></td><td>CT2025005</td><td><button class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-info" title="Ver Detalhes"><i class="fas fa-eye"></i></button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="contratos-locacao-page" class="page-content">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><h1 class="page-title">Contratos de Locação</h1><p class="page-subtitle">Gerencie contratos de locação de impressoras</p></div>
+                    <div><button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#novoContratoModal"><i class="fas fa-file-contract"></i> Novo Contrato</button></div>
+                </div>
+            </div>
+            
+            <div id="contratoDetalhe" style="display: none;">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center"><h5 class="card-title mb-0">Detalhes do Contrato: <span id="contratoNumero"></span></h5><button class="btn btn-sm btn-outline-secondary" onclick="fecharDetalhes()"><i class="fas fa-times"></i> Fechar</button></div>
+                    <div class="card-body">
+                        <div class="contrato-detail">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h4 id="contratoCliente"></h4>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <div class="info-item"><span class="info-label">Número do Contrato:</span><span class="info-value" id="contratoNumeroDetalhe"></span></div>
+                                            <div class="info-item"><span class="info-label">Valor Total:</span><span class="info-value valor-contrato" id="contratoValor"></span></div>
+                                            <div class="info-item"><span class="info-label">Valor Mensal:</span><span class="info-value" id="contratoMensal"></span></div>
+                                            <div class="info-item"><span class="info-label">Data de Fechamento:</span><span class="info-value" id="contratoFechamento"></span></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="info-item"><span class="info-label">Data de Início:</span><span class="info-value" id="contratoInicio"></span></div>
+                                            <div class="info-item"><span class="info-label">Data de Término:</span><span class="info-value" id="contratoTermino"></span></div>
+                                            <div class="info-item"><span class="info-label">Status:</span><span class="info-value" id="contratoStatus"></span></div>
+                                            <div class="info-item"><span class="info-label">Classificação ABC:</span><span class="info-value" id="contratoClassificacao"></span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button class="btn btn-outline-primary mb-2"><i class="fas fa-print"></i> Imprimir Contrato</button>
+                                    <button class="btn btn-outline-success mb-2"><i class="fas fa-file-pdf"></i> Exportar PDF</button>
+                                    <button class="btn btn-outline-warning mb-2"><i class="fas fa-edit"></i> Renovar Contrato</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4"><h5>Impressoras Vinculadas</h5><div class="row" id="impressorasContrato"></div></div>
+                        <div class="mt-4"><h5>Histórico do Contrato</h5><div class="timeline" id="historicoContrato"></div></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filter-bar">
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">Status</label><select class="form-select"><option selected>Ativos</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Cliente</label><input type="text" class="form-control" placeholder="Nome do cliente"></div>
+                    <div class="col-md-3"><label class="form-label">Valor</label><select class="form-select"><option selected>Todos</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Data de Fechamento</label><select class="form-select"><option selected>Todos</option></select></div>
+                </div>
+                <div class="row mt-3"><div class="col text-end"><button class="btn btn-primary me-2"><i class="fas fa-filter"></i> Aplicar Filtros</button> <button class="btn btn-outline-secondary"><i class="fas fa-redo"></i> Limpar</button></div></div>
+            </div>
+            
+            <div class="row" id="cardsContratos">
+                <div class="col-md-4">
+                    <div class="card contrato-card cliente-a" onclick="verDetalhesContrato('CT2025001')">
+                        <div class="tag-contador">12</div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3"><div><h5 class="card-title mb-1">Hospital Regional</h5><p class="text-muted small mb-0">Contrato: CT2025001</p></div><div><span class="abc-badge abc-a">A</span></div></div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Valor Total:</span><strong class="valor-contrato">R$ 18.500,00</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Mensalidade:</span><strong>R$ 2.500,00</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Impressoras:</span><strong>12 unidades</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Fechamento:</span><strong>15/10/2025</strong></div>
+                                <div class="d-flex justify-content-between"><span class="text-muted">Status:</span><span class="status-badge status-ativo">Ativo</span></div>
+                            </div>
+                            <div class="d-flex justify-content-between"><small class="text-muted">Vence em: 15/10/2026</small><button class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i> Detalhes</button></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card contrato-card cliente-a" onclick="verDetalhesContrato('CT2025002')">
+                        <div class="tag-contador">8</div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3"><div><h5 class="card-title mb-1">Universidade Federal</h5><p class="text-muted small mb-0">Contrato: CT2025002</p></div><div><span class="abc-badge abc-a">A</span></div></div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Valor Total:</span><strong class="valor-contrato">R$ 14.400,00</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Mensalidade:</span><strong>R$ 1.800,00</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Impressoras:</span><strong>8 unidades</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Fechamento:</span><strong>01/12/2025</strong></div>
+                                <div class="d-flex justify-content-between"><span class="text-muted">Status:</span><span class="status-badge status-ativo">Ativo</span></div>
+                            </div>
+                            <div class="d-flex justify-content-between"><small class="text-muted">Vence em: 01/12/2026</small><button class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i> Detalhes</button></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card contrato-card cliente-b" onclick="verDetalhesContrato('CT2025003')">
+                        <div class="tag-contador">5</div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3"><div><h5 class="card-title mb-1">Rede de Farmácias</h5><p class="text-muted small mb-0">Contrato: CT2025003</p></div><div><span class="abc-badge abc-b">B</span></div></div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Valor Total:</span><strong class="valor-contrato">R$ 9.000,00</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Mensalidade:</span><strong>R$ 750,00</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Impressoras:</span><strong>5 unidades</strong></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Fechamento:</span><strong>10/11/2025</strong></div>
+                                <div class="d-flex justify-content-between"><span class="text-muted">Status:</span><span class="status-badge status-atrasado">Atrasado</span></div>
+                            </div>
+                            <div class="d-flex justify-content-between"><small class="text-muted">Vence em: 10/11/2026</small><button class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i> Detalhes</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Resumo de Contratos</h5></div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-3"><span>Contratos Ativos:</span><strong class="text-success">5</strong></div>
+                            <div class="d-flex justify-content-between mb-3"><span>Valor Total em Contratos:</span><strong>R$ 48.900,00</strong></div>
+                            <div class="d-flex justify-content-between mb-3"><span>Valor Médio por Contrato:</span><strong>R$ 9.780,00</strong></div>
+                            <div class="d-flex justify-content-between mb-3"><span>Impressoras em Contrato:</span><strong>29 unidades</strong></div>
+                            <div class="d-flex justify-content-between"><span>Taxa de Renovação:</span><strong class="text-success">85%</strong></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Próximas Renovações</h5></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead><tr><th>Cliente</th><th>Contrato</th><th>Vencimento</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>Hospital Regional</td><td>CT2025001</td><td class="text-warning"><strong>15/10/2026</strong></td><td><span class="badge bg-success">A renovar</span></td></tr>
+                                        <tr><td>Universidade Federal</td><td>CT2025002</td><td><strong>01/12/2026</strong></td><td><span class="badge bg-success">A renovar</span></td></tr>
+                                        <tr><td>Rede de Farmácias</td><td>CT2025003</td><td class="text-danger"><strong>10/11/2026</strong></td><td><span class="badge bg-warning">Atenção</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="entrada-page" class="page-content">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><h1 class="page-title">Entrada de Produtos</h1><p class="page-subtitle">Registre entradas de estoque</p></div>
+                    <div><button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#novaEntradaModal"><i class="fas fa-arrow-down"></i> Nova Entrada</button></div>
+                </div>
+            </div>
+            
+            <div class="filter-bar">
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">Período</label><select class="form-select"><option selected>Este mês</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Fornecedor</label><input type="text" class="form-control" placeholder="Nome do fornecedor"></div>
+                    <div class="col-md-3"><label class="form-label">Produto</label><input type="text" class="form-control" placeholder="Nome do produto"></div>
+                    <div class="col-md-3"><label class="form-label">NF</label><select class="form-select"><option selected>Todas</option></select></div>
+                </div>
+                <div class="row mt-3"><div class="col text-end"><button class="btn btn-primary me-2"><i class="fas fa-filter"></i> Aplicar Filtros</button> <button class="btn btn-outline-secondary"><i class="fas fa-redo"></i> Limpar</button></div></div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center"><h5 class="card-title mb-0">Histórico de Entradas</h5><div class="text-muted">Total: R$ 12.540,00 este mês</div></div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="tabelaEntrada">
+                            <thead><tr><th>Data</th><th>Fornecedor</th><th>Produto</th><th>Quantidade</th><th>Valor Unit.</th><th>Valor Total</th><th>NF</th><th>Nº NF</th><th width="100">Ações</th></tr></thead>
+                            <tbody>
+                                <tr><td>29/12/2025</td><td><strong>Fornecedor X</strong></td><td>TONER 2854</td><td>50</td><td>R$ 85,00</td><td><strong>R$ 4.250,00</strong></td><td><span class="badge bg-success">Sim</span></td><td>NF-e 1364</td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></td></tr>
+                                <tr><td>28/12/2025</td><td><strong>Fornecedor Y</strong></td><td>TN 3612 COMP</td><td>30</td><td>R$ 180,00</td><td><strong>R$ 5.400,00</strong></td><td><span class="badge bg-success">Sim</span></td><td>NF-e 1358</td><td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Fornecedores Principais</h5></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead><tr><th>Fornecedor</th><th>Compras (30 dias)</th><th>Valor Total</th><th>Última Compra</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><strong>Fornecedor X</strong></td><td>3 compras</td><td>R$ 8.250,00</td><td>29/12/2025</td></tr>
+                                        <tr><td><strong>Fornecedor Y</strong></td><td>2 compras</td><td>R$ 5.400,00</td><td>28/12/2025</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Últimas Entradas</h5></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead><tr><th>Data</th><th>Produto</th><th>Quantidade</th><th>Fornecedor</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>29/12/2025</td><td>TONER 2854</td><td>50</td><td>Fornecedor X</td></tr>
+                                        <tr><td>28/12/2025</td><td>TN 3612 COMP</td><td>30</td><td>Fornecedor Y</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="impressoras-page" class="page-content">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><h1 class="page-title">Controle de Impressoras</h1><p class="page-subtitle">Gerencie o patrimônio de impressoras</p></div>
+                    <div><button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#novaImpressoraModal"><i class="fas fa-plus"></i> Nova Impressora</button></div>
+                </div>
+            </div>
+            
+            <div class="filter-bar">
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">Status</label><select class="form-select"><option selected>Todas</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Modelo</label><input type="text" class="form-control" placeholder="Modelo da impressora"></div>
+                    <div class="col-md-3"><label class="form-label">Localização</label><input type="text" class="form-control" placeholder="Onde está"></div>
+                    <div class="col-md-3"><label class="form-label">MLT</label><input type="text" class="form-control" placeholder="Número MLT"></div>
+                </div>
+                <div class="row mt-3"><div class="col text-end"><button class="btn btn-primary me-2"><i class="fas fa-filter"></i> Aplicar Filtros</button> <button class="btn btn-outline-secondary"><i class="fas fa-redo"></i> Limpar</button></div></div>
+            </div>
+            
+            <div class="row" id="cardsImpressoras">
+                <div class="col-md-4">
+                    <div class="card impressora-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3"><div><h5 class="card-title mb-1">HP M428</h5><p class="text-muted small mb-0">Serial: ABC123456</p></div><div><span class="impressora-status status-disponivel"></span><span class="badge bg-success">Disponível</span></div></div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1"><span class="text-muted">MLT:</span><strong>MLT001</strong></div>
+                                <div class="d-flex justify-content-between mb-1"><span class="text-muted">Localização:</span><strong>Estoque</strong></div>
+                                <div class="d-flex justify-content-between mb-1"><span class="text-muted">Desde:</span><strong>15/10/2025</strong></div>
+                                <div class="d-flex justify-content-between"><span class="text-muted">Contador:</span><strong>12.450 páginas</strong></div>
+                            </div>
+                            <div class="d-flex justify-content-between"><button class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i> Detalhes</button> <button class="btn btn-sm btn-outline-warning"><i class="fas fa-wrench"></i> Manutenção</button> <button class="btn btn-sm btn-outline-success"><i class="fas fa-calendar-alt"></i> Locar</button></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card impressora-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3"><div><h5 class="card-title mb-1">Epson L380</h5><p class="text-muted small mb-0">Serial: DEF789012</p></div><div><span class="impressora-status status-locado"></span><span class="badge bg-warning">Locada</span></div></div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1"><span class="text-muted">MLT:</span><strong>MLT002</strong></div>
+                                <div class="d-flex justify-content-between mb-1"><span class="text-muted">Localização:</span><strong>Escritório Central</strong></div>
+                                <div class="d-flex justify-content-between mb-1"><span class="text-muted">Desde:</span><strong>15/12/2025</strong></div>
+                                <div class="d-flex justify-content-between"><span class="text-muted">Contador:</span><strong>8.720 páginas</strong></div>
+                            </div>
+                            <div class="d-flex justify-content-between"><button class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i> Detalhes</button> <button class="btn btn-sm btn-outline-warning"><i class="fas fa-wrench"></i> Manutenção</button> <button class="btn btn-sm btn-outline-danger"><i class="fas fa-undo"></i> Devolver</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Histórico de Manutenção</h5></div>
+                        <div class="card-body">
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                    <div class="d-flex justify-content-between"><h6 class="mb-1">Manutenção Preventiva</h6><small class="text-muted">28/12/2025</small></div>
+                                    <p class="mb-1"><strong>Impressora:</strong> Brother DCP-L2550 (MLT003)</p>
+                                    <p class="mb-1"><strong>Peças trocadas:</strong> Fusor, Rolo de Transferência</p>
+                                    <p class="mb-0"><strong>Técnico:</strong> João Silva</p>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="d-flex justify-content-between"><h6 class="mb-1">Troca de Toner</h6><small class="text-muted">20/12/2025</small></div>
+                                    <p class="mb-1"><strong>Impressora:</strong> Epson L380 (MLT002)</p>
+                                    <p class="mb-1"><strong>Peças trocadas:</strong> Toner Preto, Toner Colorido</p>
+                                    <p class="mb-0"><strong>Técnico:</strong> Maria Santos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="relatorios-page" class="page-content">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><h1 class="page-title">Relatórios</h1><p class="page-subtitle">Gere relatórios e visualize análises</p></div>
+                    <div><button class="btn btn-primary btn-action" id="exportarRelatorio"><i class="fas fa-file-export"></i> Exportar Tudo</button></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4"><div class="card"><div class="card-body text-center"><div class="mb-3"><i class="fas fa-chart-line fa-3x text-primary"></i></div><h5 class="card-title">Vendas</h5><p class="text-muted small">Relatórios de vendas por período, cliente e produto</p><div class="d-grid gap-2"><button class="btn btn-outline-primary">Gerar Relatório</button> <button class="btn btn-outline-secondary">Exportar para Excel</button></div></div></div></div>
+                <div class="col-md-4"><div class="card"><div class="card-body text-center"><div class="mb-3"><i class="fas fa-calendar-alt fa-3x text-info"></i></div><h5 class="card-title">Locação</h5><p class="text-muted small">Relatórios de locação ativa, histórico e faturamento</p><div class="d-grid gap-2"><button class="btn btn-outline-primary">Gerar Relatório</button> <button class="btn btn-outline-secondary">Exportar para Excel</button></div></div></div></div>
+                <div class="col-md-4"><div class="card"><div class="card-body text-center"><div class="mb-3"><i class="fas fa-boxes fa-3x text-success"></i></div><h5 class="card-title">Estoque</h5><p class="text-muted small">Relatórios de estoque atual, movimentações e previsão</p><div class="d-grid gap-2"><button class="btn btn-outline-primary">Gerar Relatório</button> <button class="btn btn-outline-secondary">Exportar para Excel</button></div></div></div></div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Top 5 Clientes</h5></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead><tr><th>Cliente</th><th>Vendas</th><th>Locacao</th><th>Total</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><strong>Pichau</strong></td><td>R$ 3.795,00</td><td>R$ 0,00</td><td class="text-success"><strong>R$ 3.795,00</strong></td></tr>
+                                        <tr><td><strong>MARCIO LEAL</strong></td><td>R$ 390,00</td><td>R$ 600,00</td><td class="text-success"><strong>R$ 990,00</strong></td></tr>
+                                        <tr><td><strong>Escritório Central</strong></td><td>R$ 0,00</td><td>R$ 750,00</td><td class="text-success"><strong>R$ 750,00</strong></td></tr>
+                                        <tr><td><strong>Terabyte</strong></td><td>R$ 140,00</td><td>R$ 480,00</td><td class="text-success"><strong>R$ 620,00</strong></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Vendas por Mês</h5></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead><tr><th>Mês</th><th>Vendas</th><th>Locação</th><th>Total</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>Dezembro/2025</td><td>R$ 890,00</td><td>R$ 2.400,00</td><td>R$ 3.290,00</td></tr>
+                                        <tr><td>Janeiro/2026</td><td>R$ 3.795,00</td><td>R$ 750,00</td><td>R$ 4.545,00</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header"><h5 class="card-title mb-0">Configurar Relatório Personalizado</h5></div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3"><label class="form-label">Tipo de Relatório</label><select class="form-select"><option selected>Vendas</option></select></div>
+                                <div class="col-md-3"><label class="form-label">Período Inicial</label><input type="date" class="form-control" value="2025-12-01"></div>
+                                <div class="col-md-3"><label class="form-label">Período Final</label><input type="date" class="form-control" value="2026-01-06"></div>
+                                <div class="col-md-3"><label class="form-label">Formato</label><select class="form-select"><option selected>PDF</option></select></div>
+                            </div>
+                            <div class="row mt-3"><div class="col text-end"><button class="btn btn-primary"><i class="fas fa-cog"></i> Gerar Relatório Personalizado</button></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="configuracoes-page" class="page-content">
+            <div class="page-header"><div class="d-flex justify-content-between align-items-center"><div><h1 class="page-title">Configurações</h1><p class="page-subtitle">Configure o sistema conforme suas necessidades</p></div></div></div>
+            <div class="card">
+                <div class="card-header"><h5 class="card-title mb-0">Configurações do Sistema</h5></div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Configurações de Estoque</h6>
+                            <div class="mb-3"><label class="form-label">Dias para alerta de vencimento</label><input type="number" class="form-control" value="7" min="1" max="30"></div>
+                            <div class="mb-3"><label class="form-label">Percentual mínimo para alerta de estoque</label><input type="number" class="form-control" value="20" min="1" max="100"><small class="text-muted">Alertar quando estoque estiver abaixo de X% do mínimo</small></div>
+                            <div class="mb-3"><label class="form-label">Enviar alertas por email</label><select class="form-select"><option selected>Sim</option><option>Não</option></select></div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Configurações de Notificações</h6>
+                            <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="notifVencimento" checked> <label class="form-check-label">Notificar sobre vencimentos</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="notifEstoque" checked> <label class="form-check-label">Notificar sobre estoque baixo</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="notifManutencao" checked> <label class="form-check-label">Notificar sobre manutenções</label></div>
+                        </div>
+                    </div>
+                    <div class="row mt-4"><div class="col-12"><button class="btn btn-primary">Salvar Configurações</button></div></div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="row mt-5 pt-3 border-top text-muted small">
+                <div class="col-md-6">© 2026 PrintControl</div>
+                <div class="col-md-6 text-end">Data: <span id="current-date"></span></div>
+            </div>
+        </footer>
+    </div>
+    
+    <div class="modal fade" id="novaVendaModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Nova Venda</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row mb-3"><div class="col-md-6"><label class="form-label">Cliente</label><input type="text" class="form-control" required></div><div class="col-md-6"><label class="form-label">Produto</label><input type="text" class="form-control" required></div></div>
+                        <div class="row mb-3"><div class="col-md-3"><label class="form-label">Quantidade</label><input type="number" class="form-control" value="1"></div><div class="col-md-3"><label class="form-label">Valor Unitário</label><input type="text" class="form-control" placeholder="0,00"></div><div class="col-md-3"><label class="form-label">Pagamento</label><select class="form-select"><option>PIX</option><option>BOLETO</option></select></div><div class="col-md-3"><label class="form-label">Vencimento</label><input type="date" class="form-control"></div></div>
+                    </form>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary">Salvar Venda</button></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="novaSaidaModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Nova Saída para Locação</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row mb-3"><div class="col-md-6"><label class="form-label">Produto</label><input type="text" class="form-control" required></div><div class="col-md-6"><label class="form-label">Quantidade</label><input type="number" class="form-control" value="1"></div></div>
+                        <div class="row mb-3"><div class="col-md-6"><label class="form-label">Cliente/Local</label><input type="text" class="form-control" required></div><div class="col-md-6"><label class="form-label">Impressora</label><select class="form-select"><option>HP M428 (MLT001)</option></select></div></div>
+                        <div class="mb-3"><label class="form-label">Observação</label><textarea class="form-control"></textarea></div>
+                    </form>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary">Registrar Saída</button></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="novoContratoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg-custom">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Novo Contrato</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row mb-3"><div class="col-md-6"><label class="form-label">Cliente</label><input type="text" class="form-control"></div><div class="col-md-6"><label class="form-label">Número do Contrato</label><input type="text" class="form-control"></div></div>
+                        <div class="row mb-3"><div class="col-md-4"><label class="form-label">Valor Mensal</label><input type="text" class="form-control"></div><div class="col-md-4"><label class="form-label">Data de Início</label><input type="date" class="form-control"></div><div class="col-md-4"><label class="form-label">Data de Término</label><input type="date" class="form-control"></div></div>
+                    </form>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary">Salvar Contrato</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="novaEntradaModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Nova Entrada</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Formulário de entrada...</p></div></div></div></div>
+    <div class="modal fade" id="novoProdutoModal" tabindex="-1">
+        <div class="modal-body">
+    <form action="/novo_produto" method="POST">
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <label class="form-label">Nome do Produto</label>
+                <input type="text" class="form-control" name="nome" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Categoria</label>
+                <select class="form-select" name="categoria">
+                    <option value="Toner">Toner</option>
+                    <option value="Cilindro">Cilindro</option>
+                    <option value="Impressora">Impressora</option>
+                    <option value="Pecas">Peças</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Estoque Inicial</label>
+                <input type="number" class="form-control" name="quantidade" value="0">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Estoque Mínimo</label>
+                <input type="number" class="form-control" name="minimo" value="5">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Valor (R$)</label>
+                <input type="text" class="form-control" name="valor" placeholder="0.00">
+            </div>
+        </div>
+        <div class="modal-footer px-0 pb-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Produto</button>
+        </div>
+    </form>
+</div></div>
+    <div class="modal fade" id="ajusteEstoqueModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Ajuste de Estoque</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Formulário de ajuste...</p></div></div></div></div>
+    <div class="modal fade" id="novaImpressoraModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Nova Impressora</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Formulário de impressora...</p></div></div></div></div>
+    <div class="modal fade" id="novaLocacaoModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Nova Locação</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Formulário de locação...</p></div></div></div></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initNavigation();
+            updateCurrentDate();
+            setupAutocomplete();
+            
+            // Abas do Bootstrap (Vendas)
+            var triggerTabList = [].slice.call(document.querySelectorAll('#vendasTabs a'))
+            triggerTabList.forEach(function (triggerEl) {
+                var tabTrigger = new bootstrap.Tab(triggerEl)
+                triggerEl.addEventListener('click', function (event) {
+                    event.preventDefault()
+                    tabTrigger.show()
+                })
+            })
+        });
+        
+        function initNavigation() {
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if(!this.dataset.page) return;
+                    
+                    document.querySelectorAll('.sidebar .nav-link').forEach(item => item.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
+                    const pageId = this.getAttribute('data-page') + '-page';
+                    const targetPage = document.getElementById(pageId);
+                    if(targetPage) targetPage.classList.add('active');
+                    
+                    if (this.getAttribute('data-page') !== 'contratos-locacao') {
+                        fecharDetalhes();
+                    }
+                    
+                    if (window.innerWidth < 768) {
+                        document.getElementById('sidebar').classList.remove('active');
+                        document.getElementById('mainContent').classList.remove('active');
+                    }
+                });
+            });
+            
+            document.getElementById('sidebarToggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('mainContent').classList.toggle('active');
+            });
+        }
+        
+        function updateCurrentDate() {
+            const now = new Date();
+            document.getElementById('current-date').textContent = now.toLocaleDateString('pt-BR');
+        }
+
+        /* Lógica de Contratos (Arquivo 1) */
+        function verDetalhesContrato(numeroContrato) {
+            const contratos = {
+                'CT2025001': {
+                    cliente: 'Hospital Regional', numero: 'CT2025001', valorTotal: 'R$ 18.500,00', mensal: 'R$ 2.500,00', 
+                    fechamento: '15/10/2025', inicio: '15/10/2025', termino: '15/10/2026', 
+                    status: '<span class="status-badge status-ativo">Ativo</span>', classificacao: '<span class="abc-badge abc-a">Classe A</span>',
+                    impressoras: [{ modelo: 'HP M428', serial: 'ABC123456', mlt: 'MLT001', local: 'Ala 1 - Andar 2' }],
+                    historico: [{ data: '15/10/2025', evento: 'Contrato assinado' }]
+                },
+                'CT2025002': {
+                     cliente: 'Universidade Federal', numero: 'CT2025002', valorTotal: 'R$ 14.400,00', mensal: 'R$ 1.800,00', 
+                     fechamento: '01/12/2025', inicio: '01/12/2025', termino: '01/12/2026', 
+                     status: '<span class="status-badge status-ativo">Ativo</span>', classificacao: '<span class="abc-badge abc-a">Classe A</span>',
+                     impressoras: [], historico: []
+                },
+                'CT2025003': {
+                    cliente: 'Rede de Farmácias', numero: 'CT2025003', valorTotal: 'R$ 9.000,00', mensal: 'R$ 750,00', 
+                    fechamento: '10/11/2025', inicio: '10/11/2025', termino: '10/11/2026', 
+                    status: '<span class="status-badge status-atrasado">Atrasado</span>', classificacao: '<span class="abc-badge abc-b">Classe B</span>',
+                    impressoras: [{ modelo: 'Epson L380', serial: 'DEF789014', mlt: 'MLT012', local: 'Farmácia Zona Sul' }],
+                    historico: [{ data: '10/11/2025', evento: 'Contrato assinado' }]
+                }
+            };
+            
+            const contrato = contratos[numeroContrato];
+            if (!contrato) return;
+            
+            document.getElementById('contratoNumero').textContent = contrato.numero;
+            document.getElementById('contratoCliente').textContent = contrato.cliente;
+            document.getElementById('contratoNumeroDetalhe').textContent = contrato.numero;
+            document.getElementById('contratoValor').textContent = contrato.valorTotal;
+            document.getElementById('contratoMensal').textContent = contrato.mensal;
+            document.getElementById('contratoFechamento').textContent = contrato.fechamento;
+            document.getElementById('contratoInicio').textContent = contrato.inicio;
+            document.getElementById('contratoTermino').textContent = contrato.termino;
+            document.getElementById('contratoStatus').innerHTML = contrato.status;
+            document.getElementById('contratoClassificacao').innerHTML = contrato.classificacao;
+            
+            const impressorasContainer = document.getElementById('impressorasContrato');
+            impressorasContainer.innerHTML = '';
+            contrato.impressoras.forEach(impressora => {
+                impressorasContainer.innerHTML += `
+                    <div class="col-md-6"><div class="impressora-mini-card">
+                        <h6 class="mb-1">${impressora.modelo}</h6>
+                        <small class="text-muted">Serial: ${impressora.serial}</small>
+                        <p class="text-muted small mb-0">MLT: ${impressora.mlt} | Local: ${impressora.local}</p>
+                    </div></div>`;
+            });
+
+            const historicoContainer = document.getElementById('historicoContrato');
+            historicoContainer.innerHTML = '';
+            contrato.historico.forEach(item => {
+                historicoContainer.innerHTML += `
+                    <div class="timeline-item"><div class="d-flex justify-content-between">
+                        <h6 class="mb-1">${item.evento}</h6><small class="text-muted">${item.data}</small>
+                    </div></div>`;
+            });
+            
+            document.getElementById('contratoDetalhe').style.display = 'block';
+            document.getElementById('cardsContratos').style.display = 'none';
+            document.querySelector('#contratos-locacao-page .filter-bar').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function fecharDetalhes() {
+            document.getElementById('contratoDetalhe').style.display = 'none';
+            document.getElementById('cardsContratos').style.display = 'flex';
+            const filterBar = document.querySelector('#contratos-locacao-page .filter-bar');
+            if(filterBar) filterBar.style.display = 'block';
+        }
+
+        /* Autocomplete */
+        function setupAutocomplete() {
+            const produtosEstoque = ["TONER 2854", "TN 3612 COMP", "F218 - HP", "204 - CILINDRO", "T03 COMP."];
+            document.addEventListener('input', function(e) {
+                if (e.target.matches('input[placeholder*="Produto"], input[placeholder*="produto"]')) {
+                    const input = e.target;
+                    const value = input.value.toLowerCase();
+                    let existingSuggestions = document.getElementById('autocomplete-suggestions');
+                    if (existingSuggestions) existingSuggestions.remove();
+                    
+                    if (value.length > 0) {
+                        const filtered = produtosEstoque.filter(item => item.toLowerCase().includes(value));
+                        if (filtered.length > 0) {
+                            const suggestionsDiv = document.createElement('div');
+                            suggestionsDiv.id = 'autocomplete-suggestions';
+                            suggestionsDiv.className = 'autocomplete-suggestions';
+                            filtered.forEach(item => {
+                                const div = document.createElement('div');
+                                div.className = 'autocomplete-suggestion';
+                                div.textContent = item;
+                                div.addEventListener('click', function() {
+                                    input.value = item;
+                                    suggestionsDiv.remove();
+                                });
+                                suggestionsDiv.appendChild(div);
+                            });
+                            const rect = input.getBoundingClientRect();
+                            suggestionsDiv.style.top = (rect.bottom + window.scrollY) + 'px';
+                            suggestionsDiv.style.left = (rect.left + window.scrollX) + 'px';
+                            suggestionsDiv.style.width = rect.width + 'px';
+                            document.body.appendChild(suggestionsDiv);
+                        }
+                    }
+                }
+            });
+            document.addEventListener('click', function(e) {
+                const sugg = document.getElementById('autocomplete-suggestions');
+                if (sugg && !e.target.matches('input')) sugg.remove();
+            });
+        }
+    </script>
+</body>
+</html>

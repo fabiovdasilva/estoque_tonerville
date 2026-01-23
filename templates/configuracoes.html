@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="configuracoes-page" class="page-content active">
+    <div class="page-header"><h1 class="page-title">Configurações</h1></div>
+    <div class="card">
+        <div class="card-header"><h5 class="card-title mb-0">Alertas de Estoque</h5></div>
+        <div class="card-body">
+            <form action="{{ url_for('salvar_configuracoes') }}" method="POST">
+                <div class="mb-4">
+                    <label class="form-label">Margem de Atenção (%) para Alerta Laranja</label>
+                    <input type="number" class="form-control" name="margem_atencao_pct" value="{{ config.margem_atencao_pct }}" min="0" max="100">
+                    <div class="form-text">Ex: Se o Mínimo é 10 e a margem é 20%, o alerta laranja aparece entre 11 e 12 unidades.</div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Dias para alerta de vencimento</label>
+                    <input type="number" class="form-control" name="dias_alerta_vencimento" value="{{ config.dias_alerta_vencimento }}">
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
