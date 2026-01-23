@@ -56,11 +56,11 @@
                     <a class="nav-link {% if request.endpoint == 'estoque' %}active{% endif %}" href="{{ url_for('estoque') }}">
                         <i class="fas fa-boxes me-2"></i> Estoque
                     </a>
-                    <li class="nav-item">
-    <a class="nav-link" href="{{ url_for('fornecedores') }}">
-        <i class="fas fa-truck"></i> Fornecedores
-    </a>
-</li>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'fornecedores' %}active{% endif %}" href="{{ url_for('fornecedores') }}">
+                        <i class="fas fa-truck me-2"></i> Fornecedores
+                    </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.endpoint == 'clientes' %}active{% endif %}" href="{{ url_for('clientes') }}">
@@ -83,9 +83,10 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">
+                    <a class="nav-link {% if request.endpoint == 'contratos' %}active{% endif %}" href="{{ url_for('contratos') }}">
                         <i class="fas fa-file-contract me-2"></i> Contratos
                     </a>
+
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.endpoint == 'impressoras' %}active{% endif %}" href="{{ url_for('impressoras') }}">
@@ -93,13 +94,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
-    <a class="nav-link" href="{{ url_for('notificacoes') }}">
-        <i class="fas fa-bell"></i> Notificações
-        {% if total_alertas and total_alertas > 0 %}
-            <span class="alert-badge" style="background-color: #e74c3c; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; float: right;">{{ total_alertas }}</span>
-        {% endif %}
-    </a>
-</li>
+                    <a class="nav-link {% if request.endpoint == 'notificacoes' %}active{% endif %}" href="{{ url_for('notificacoes') }}">
+                        <i class="fas fa-bell me-2"></i> Notificações
+                        {% if total_alertas and total_alertas > 0 %}
+                            <span class="alert-badge" style="background-color: #e74c3c; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; float: right;">{{ total_alertas }}</span>
+                        {% endif %}
+                    </a>
+                </li>
 
                 <li class="nav-item">
                     <a class="nav-link" href="#">

@@ -12,7 +12,7 @@
     /* Filtros */
     .filter-bar { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
     
-    /* Tabela e Scroll (Limite de 10 Linhas) */
+    /* Tabela e Scroll */
     .card-table { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border-radius: 8px; }
     
     .table-scroll-10 {
@@ -188,12 +188,17 @@
                             {% set row_class = '' %}
                             {% set badge_html = '<span class="badge-pill badge-soft-success">Normal</span>' %}
                             
-                            {% if produto.quantidade <= produto.minimo %}
-                                {% set row_class = 'product-critical' %}
-                                {% set badge_html = '<span class="badge-pill badge-soft-danger">Crítico</span>' %}
-                            {% elif produto.quantidade <= limite_atencao %}
-                                {% set row_class = 'product-low' %}
-                                {% set badge_html = '<span class="badge-pill badge-soft-warning">Baixo</span>' %}
+                            {% if not produto.ativo %}
+                                {% set row_class = 'text-muted bg-light' %}
+                                {% set badge_html = '<span class="badge bg-secondary">Inativo</span>' %}
+                            {% else %}
+                                {% if produto.quantidade <= produto.minimo %}
+                                    {% set row_class = 'product-critical' %}
+                                    {% set badge_html = '<span class="badge-pill badge-soft-danger">Crítico</span>' %}
+                                {% elif produto.quantidade <= limite_atencao %}
+                                    {% set row_class = 'product-low' %}
+                                    {% set badge_html = '<span class="badge-pill badge-soft-warning">Baixo</span>' %}
+                                {% endif %}
                             {% endif %}
 
                         <tr class="{{ row_class }}" data-marca="{{ produto.marca }}" data-qtd="{{ produto.quantidade }}">
@@ -234,6 +239,7 @@
                                         data-minimo="{{ produto.minimo }}"
                                         data-venda="{{ '%.2f'|format(produto.valor_venda)|replace('.', ',') }}"
                                         data-obs="{{ produto.observacao }}"
+                                        data-ativo="{{ 'true' if produto.ativo else 'false' }}"
                                         onclick="abrirEdicao(this)" 
                                         title="Editar">
                                         <i class="fas fa-edit"></i>
@@ -338,9 +344,16 @@
                         <div class="card-body">
                             <span class="section-title">Valores e Estoque</span>
                             <div class="row g-3">
-                                <div class="col-md-4"><label class="form-label small text-muted fw-bold">Estoque Inicial</label><input type="number" class="form-control bg-light" name="quantidade" value="0" readonly><div class="form-text small">Inicia zerado por segurança.</div></div>
-                                <div class="col-md-4"><label class="form-label small text-muted fw-bold">Mínimo</label><input type="number" class="form-control" name="minimo" value="5"></div>
-                                <div class="col-md-4"><label class="form-label small text-muted fw-bold">Venda (R$)</label><input type="text" class="form-control" name="valor_venda" placeholder="0,00"></div>
+                                <div class="col-md-3"><label class="form-label small text-muted fw-bold">Estoque Inicial</label><input type="number" class="form-control bg-light" name="quantidade" value="0" readonly><div class="form-text small">Inicia zerado por segurança.</div></div>
+                                <div class="col-md-3"><label class="form-label small text-muted fw-bold">Mínimo</label><input type="number" class="form-control" name="minimo" value="5"></div>
+                                <div class="col-md-3"><label class="form-label small text-muted fw-bold">Venda (R$)</label><input type="text" class="form-control" name="valor_venda" placeholder="0,00"></div>
+                                <div class="col-md-3">
+                                    <label class="form-label small text-muted fw-bold mb-2 d-block">Status</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="ativo" id="novo_ativo" checked>
+                                        <label class="form-check-label" for="novo_ativo">Item Ativo</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -378,7 +391,19 @@
                     <input type="hidden" name="produto_id" id="edit_id">
                     <div class="row mb-3"><div class="col-md-6"><label class="form-label small fw-bold">Nome</label><input type="text" class="form-control" name="nome" id="edit_nome" required></div><div class="col-md-3"><label class="form-label small fw-bold">Marca</label><input type="text" class="form-control" name="marca" id="edit_marca"></div><div class="col-md-3"><label class="form-label small fw-bold">Categoria</label><select class="form-select" name="categoria" id="edit_categoria"><option>Toner</option><option>Cilindro</option><option>Peças</option><option>Impressora</option><option>Outros</option></select></div></div>
                     <div class="row mb-3"><div class="col-md-8"><label class="form-label small fw-bold">Compatibilidade</label><input type="text" class="form-control" name="compatibilidade" id="edit_comp"></div><div class="col-md-4"><label class="form-label small fw-bold">Mínimo</label><input type="number" class="form-control" name="minimo" id="edit_min"></div></div>
-                    <div class="row mb-3"><div class="col-md-4"><label class="form-label small fw-bold">Venda (R$)</label><input type="text" class="form-control" name="valor_venda" id="edit_venda"></div><div class="col-md-8"><label class="form-label small fw-bold">Obs</label><input type="text" class="form-control" name="observacao" id="edit_obs"></div></div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4"><label class="form-label small fw-bold">Venda (R$)</label><input type="text" class="form-control" name="valor_venda" id="edit_venda"></div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold d-block">Status</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="ativo" id="edit_ativo">
+                                <label class="form-check-label" for="edit_ativo">Item Ativo</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Obs</label><input type="text" class="form-control" name="observacao" id="edit_obs"></div>
+                    </div>
+
                 </div>
                 <div class="modal-footer"><button type="submit" class="btn btn-primary">Salvar</button></div>
             </form>
@@ -439,7 +464,9 @@
     var modalCancelarMov = new bootstrap.Modal(document.getElementById('modalCancelarMov'));
 
     function abrirModalCadastro() {
+        // Limpa e reseta
         document.querySelector('#novoProdutoModal input[name="nome"]').value = "";
+        document.getElementById('novo_ativo').checked = true; // Default Ativo
         modalCadastro.show();
     }
 
@@ -452,6 +479,11 @@
         document.getElementById('edit_min').value = btn.getAttribute('data-minimo');
         document.getElementById('edit_venda').value = btn.getAttribute('data-venda');
         document.getElementById('edit_obs').value = btn.getAttribute('data-obs');
+        
+        // Novo: Toggle do Switch
+        var isAtivo = btn.getAttribute('data-ativo') === 'true';
+        document.getElementById('edit_ativo').checked = isAtivo;
+        
         modalEdicao.show();
     }
 
