@@ -1,0 +1,18 @@
+# Arquivos Python gerados
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambiente Virtual
+venv/
+env/
+.env
+
+# Banco de Dados (Geralmente não subimos o DB, ele é recriado localmente)
+*.db
+*.sqlite3
+instance/
+
+# IDEs
+.vscode/
+.idea/
