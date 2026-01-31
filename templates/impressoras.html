@@ -257,10 +257,28 @@
             <div class="modal-body bg-light p-0">
                 <ul class="nav nav-tabs nav-justified bg-white" id="histTabs" role="tablist">
                     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-mov">Movimentações</button></li>
-                    <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#tab-manut">Manutenções (O.S.)</button></li>
+                    <li class="nav-item">
+                    <button class="nav-link text-success" data-bs-toggle="tab" data-bs-target="#tab-insumos">Insumos/Itens</button>
+                        </li>
+                    <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#tab-manut">Manutenções</button></li>
                 </ul>
                 <div class="tab-content p-4">
                     <div class="tab-pane fade show active" id="tab-mov"><ul class="timeline-clean" id="lista_movimentacoes"></ul></div>
+                    <div class="tab-pane fade" id="tab-insumos">
+    <div class="table-responsive bg-white border rounded shadow-sm">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="bg-light small text-muted">
+                <tr>
+                    <th class="ps-3">Data</th>
+                    <th>Produto/Insumo</th>
+                    <th class="text-center">Qtd</th>
+                    <th class="text-end pe-3">Pedido Ref.</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaInsumos"></tbody>
+        </table>
+    </div>
+</div>
                     <div class="tab-pane fade" id="tab-manut"><div class="accordion" id="accordionManutencoes"></div></div>
                 </div>
             </div>
@@ -295,19 +313,51 @@
 <div class="modal fade" id="modalGestaoManutencao" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-white border-bottom"><h5 class="modal-title fw-bold text-danger">Atualizar Manutenção</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-white border-bottom">
+                <h5 class="modal-title fw-bold text-danger">Atualizar Manutenção</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <form action="{{ url_for('adicionar_log_manutencao') }}" method="POST">
+                <input type="hidden" name="impressora_id" id="manut_imp_id_hidden">
+                
                 <div class="modal-body bg-light">
                     <p class="mb-3 ps-1 fw-bold text-dark" id="manut_imp_nome"></p>
+                    
                     <div class="card border-0 shadow-sm mb-3">
                         <div class="card-body">
-                            <div class="mb-3"><label class="form-label-clean">Ordem de Serviço (O.S.)</label><select class="form-select" name="manutencao_id" id="manut_os_select" required><option value="" disabled selected>Carregando...</option></select></div>
-                            <div class="mb-0"><label class="form-label-clean">Evento / Status</label><select class="form-select" name="status_detalhe" required><option>Aguardando Peça</option><option>Enviado p/ Terceiro</option><option>Aguardando Orçamento</option><option>Orçamento Aprovado</option><option>Em Bancada</option><option>Pronto p/ Retirada</option><option>Outro</option></select></div>
+                            <div class="mb-3">
+                                <label class="form-label-clean">Ordem de Serviço (O.S.)</label>
+                                <select class="form-select" name="manutencao_id" id="manut_os_select">
+                                    <option value="" disabled selected>Carregando...</option>
+                                </select>
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label-clean">Evento / Status</label>
+                                <select class="form-select" name="status_detalhe" required>
+                                    <option>Diagnóstico Técnico</option>
+                                    <option>Aguardando Peça</option>
+                                    <option>Enviado p/ Terceiro</option>
+                                    <option>Aguardando Orçamento</option>
+                                    <option>Orçamento Aprovado</option>
+                                    <option>Troca de Peças</option>
+                                    <option>Em Bancada (Testes)</option>
+                                    <option>Pronto p/ Retirada</option>
+                                    <option>Outro</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    <div class="card border-0 shadow-sm"><div class="card-body"><label class="form-label-clean">Detalhes</label><textarea class="form-control border-0 bg-light" name="observacao" rows="3"></textarea></div></div>
+                    
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <label class="form-label-clean">Detalhes da Ação</label>
+                            <textarea class="form-control border-0 bg-light" name="observacao" rows="3" placeholder="Descreva o que foi feito..."></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer border-top-0 bg-light"><button type="submit" class="btn btn-danger w-100">Registrar na O.S.</button></div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="submit" class="btn btn-danger w-100">Registrar na O.S.</button>
+                </div>
             </form>
         </div>
     </div>
@@ -362,22 +412,48 @@
 
     function abrirGestaoManutencao(id, nome) {
         document.getElementById('manut_imp_nome').innerText = nome;
+        
+        // Preenche o ID oculto para segurança
+        document.getElementById('manut_imp_id_hidden').value = id;
+        
         var selectOS = document.getElementById('manut_os_select');
         selectOS.innerHTML = '<option value="" disabled selected>Carregando O.S....</option>';
         
+        // Busca O.S. abertas para esta impressora
         fetch('/api/manutencoes_impressora/' + id).then(res => res.json()).then(data => {
             selectOS.innerHTML = '';
-            if (data.length === 0) { selectOS.innerHTML = '<option value="" disabled>Nenhuma O.S. encontrada</option>'; return; }
-            let selectedId = null;
+            
+            if (data.length === 0) { 
+                selectOS.innerHTML = '<option value="">Nenhuma O.S. encontrada (Será criada ao salvar)</option>'; 
+                return; 
+            }
+            
+            let foundOpen = false;
             data.forEach(m => {
                 let texto = `O.S. #${m.numero} - ${m.inicio} (${m.status})`;
                 let option = document.createElement("option");
-                option.value = m.id; option.text = texto;
-                if (m.status === 'Aberta' && selectedId === null) selectedId = m.id;
+                option.value = m.id; 
+                option.text = texto;
+                
+                // Se achou uma aberta, seleciona ela por padrão
+                if (m.status === 'Aberta' && !foundOpen) {
+                    option.selected = true;
+                    foundOpen = true;
+                    option.style.fontWeight = 'bold';
+                    option.text += ' [ABERTA]';
+                }
                 selectOS.appendChild(option);
             });
-            if (selectedId) selectOS.value = selectedId; else selectOS.selectedIndex = 0;
+            
+            if(!foundOpen) {
+                 let opt = document.createElement("option");
+                 opt.text = "Sem O.S. Aberta (Selecione uma antiga ou mova p/ manutenção)";
+                 opt.value = "";
+                 selectOS.prepend(opt);
+                 selectOS.selectedIndex = 0;
+            }
         });
+        
         modalManut.show();
     }
 
@@ -386,14 +462,36 @@
         document.getElementById('hist_titulo').innerText = modelo;
         var listaMov = document.getElementById('lista_movimentacoes');
         var listaManut = document.getElementById('accordionManutencoes');
+        var tabelaInsumos = document.getElementById('tabelaInsumos');
         
         listaMov.innerHTML = '<li class="text-center text-muted">Carregando...</li>';
         listaManut.innerHTML = '<div class="text-center text-muted p-3">Carregando...</div>';
+        tabelaInsumos.innerHTML = '<tr><td colspan="4" class="text-center p-3">Carregando...</td></tr>'
         
         fetch('/api/historico_completo/' + id).then(res => res.json()).then(data => {
             listaMov.innerHTML = '';
             listaManut.innerHTML = '';
+            tabelaInsumos.innerHTML = '';
             
+            //ABA INSUMOS
+            if (data.insumos && data.insumos.length > 0) {
+    data.insumos.forEach(ins => {
+        tabelaInsumos.innerHTML += `
+            <tr>
+                <td class="ps-3"><small>${ins.data}</small></td>
+                <td>
+                    <span class="fw-bold text-dark d-block">${ins.produto}</span>
+                    <small class="text-muted">${ins.marca}</small>
+                </td>
+                <td class="text-center"><span class="badge bg-secondary rounded-pill">${ins.qtd}</span></td>
+                <td class="text-end pe-3"><small class="text-primary fw-bold">Ped #${ins.pedido}</small></td>
+            </tr>
+        `;
+    });
+} else {
+    tabelaInsumos.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Nenhum insumo vinculado encontrado.</td></tr>';
+}
+
             // 1. ABA MOVIMENTAÇÕES
             if (data.movimentacoes && data.movimentacoes.length > 0) {
                 data.movimentacoes.forEach(m => {

@@ -2,15 +2,10 @@
 
 {% block content %}
 <style>
-    /* --- DESIGN GERAL (Mantendo identidade visual) --- */
-    .page-title { 
-        color: #2C3E50 !important; 
-        font-family: 'Segoe UI', sans-serif; 
-        font-weight: 700; 
-        margin-bottom: 5px; 
-    }
+    /* --- DESIGN GERAL --- */
+    .page-title { color: #2C3E50 !important; font-family: 'Segoe UI', sans-serif; font-weight: 700; margin-bottom: 5px; }
     
-    /* Cards do Topo (Indicadores) */
+    /* Cards do Topo */
     .card-overview { border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); color: white; padding: 20px; transition: transform 0.2s; position: relative; overflow: hidden; height: 100%; }
     .card-overview:hover { transform: translateY(-3px); }
     .card-overview h3 { font-weight: 700; font-size: 2.2rem; margin: 0; }
@@ -20,58 +15,93 @@
     .bg-gradient-success { background: linear-gradient(135deg, #2ecc71, #27ae60); }
     .bg-gradient-warning { background: linear-gradient(135deg, #f1c40f, #f39c12); }
 
-    /* --- NOVO DESIGN DO CARD DE CONTRATO (Customizado) --- */
-    .contrato-card { 
-        border: none; 
-        border-radius: 10px; 
-        background: white; 
-        box-shadow: 0 3px 10px rgba(0,0,0,0.05); 
-        margin-bottom: 15px; 
-        transition: all 0.3s; 
-        cursor: pointer; 
-        position: relative;
-        border-left: 5px solid #ccc; /* Cor padrão, será sobrescrita */
-        overflow: hidden;
-    }
-    .contrato-card:hover { 
-        transform: translateY(-5px); 
-        box-shadow: 0 10px 20px rgba(0,0,0,0.12); 
-    }
+    /* Cards de Contrato */
+    .contrato-card { border: none; border-radius: 10px; background: white; box-shadow: 0 3px 10px rgba(0,0,0,0.05); margin-bottom: 15px; transition: all 0.3s; cursor: pointer; position: relative; border-left: 5px solid #ccc; overflow: hidden; }
+    .contrato-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.12); }
+    .border-class-A { border-left-color: #27ae60 !important; } /* Ativo */
+    .border-class-C { border-left-color: #e74c3c !important; } /* Cancelado */
     
-    /* Borda lateral por Classificação */
-    .border-class-A { border-left-color: #27ae60 !important; }
-    .border-class-B { border-left-color: #f39c12 !important; }
-    .border-class-C { border-left-color: #e74c3c !important; }
-    
-    /* Labels Internos */
     .info-label { font-size: 0.65rem; text-transform: uppercase; color: #95a5a6; font-weight: 700; display: block; margin-bottom: 2px; }
-    .info-value { font-size: 0.85rem; font-weight: 600; color: #2c3e50; }
     .info-value-big { font-size: 1rem; font-weight: 700; color: #27ae60; }
-
-    /* Status Badge */
     .badge-status-card { font-size: 0.65rem; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; font-weight: 700; }
     .bg-status-ativo { background-color: #e8f8f5; color: #27ae60; border: 1px solid rgba(39, 174, 96, 0.2); }
-    .bg-status-cancelado { background-color: #fdedec; color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.2); }
-
-    /* Ícone Detalhes */
-    .btn-detalhes-icon { 
-        width: 30px; height: 30px; 
-        background-color: #f8f9fa; color: #2980b9; 
-        border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-        transition: all 0.2s;
-    }
-    .contrato-card:hover .btn-detalhes-icon { background-color: #2980b9; color: white; }
-
-    /* Tabs */
-    .nav-tabs { border-bottom: 1px solid #eee; margin-bottom: 20px; }
-    .nav-tabs .nav-link { color: #95a5a6; font-weight: 600; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; }
-    .nav-tabs .nav-link:hover { color: #34495e; }
-    .nav-tabs .nav-link.active { color: #2c3e50; background: transparent; border-bottom-color: #3498db; }
+    .bg-status-cancelado { background-color: #fceceb; color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.2); }
     
-    /* Timeline Modal */
-    .timeline-item { position: relative; padding-left: 30px; border-left: 2px solid #e9ecef; padding-bottom: 20px; }
-    .timeline-item::after { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid #007bff; }
-    .timeline-date { font-size: 0.75rem; color: #adb5bd; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block; }
+    /* Lista Rica (Detalhes) */
+    .table-pro { border-collapse: separate; border-spacing: 0 8px; }
+    .table-pro thead th { border: none; font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; color: #95a5a6; font-weight: 700; padding-bottom: 10px; }
+    .table-pro tbody tr { background-color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: all 0.2s; border-radius: 8px; }
+    .table-pro tbody tr:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .table-pro td { border: none; padding: 15px; vertical-align: middle; }
+    .table-pro td:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+    .table-pro td:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+    .printer-icon-box { width: 45px; height: 45px; background: linear-gradient(135deg, #e0f7fa, #b2ebf2); color: #00acc1; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 15px; }
+
+    /* --- ESTILOS DO NOVO MODAL --- */
+    .modal-header-modern { background: linear-gradient(135deg, #2c3e50, #4ca1af); color: white; border-bottom: none; padding: 20px 30px; }
+    .modal-section-title { font-size: 0.85rem; font-weight: 700; color: #2c3e50; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; margin-top: 10px; }
+    
+    .form-control-modern { border: 1px solid #e0e0e0; background-color: #f9f9f9; padding: 10px 15px; border-radius: 8px; transition: all 0.3s; }
+    .form-control-modern:focus { background-color: white; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }
+    
+    /* Box de Custos */
+    .custo-creator-box { background-color: #f8f9fa; border: 1px dashed #ced4da; border-radius: 12px; padding: 20px;}
+    .custo-badge { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 8px; background: white; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.03); margin-right: 10px; margin-bottom: 10px; transition: all 0.2s; }
+    .custo-badge:hover { transform: translateY(-2px); box-shadow: 0 5px 10px rgba(0,0,0,0.08); }
+    .custo-badge-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8rem; color: white; font-weight: bold; }
+    
+    /* --- BARRA DE ROLAGEM DA TABELA (Container Fixo) --- */
+    .custom-scroll-box {
+        height: 250px; 
+        overflow-y: auto; 
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        background-color: #fff;
+        box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+    }
+    .custom-scroll-box::-webkit-scrollbar { width: 12px; }
+    .custom-scroll-box::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 6px; }
+    .custom-scroll-box::-webkit-scrollbar-thumb { background: #bbb; border-radius: 6px; border: 2px solid #f1f1f1; }
+    .custom-scroll-box thead th { position: sticky; top: 0; background-color: #e9ecef; z-index: 5; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+    .fixed-action-bar {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+        text-align: right;
+    }
+
+    /* Cores das Linhas (Franquias) */
+    .row-custo-1 { background-color: #e3f2fd !important; }
+    .row-custo-2 { background-color: #f3e5f5 !important; }
+    .row-custo-3 { background-color: #e8f5e9 !important; }
+    .row-custo-4 { background-color: #fff3e0 !important; }
+    .row-custo-5 { background-color: #fce4ec !important; }
+    
+    /* Timeline Clean */
+    .timeline-clean { position: relative; padding: 10px 0 10px 20px; list-style: none; margin: 0; }
+    .timeline-clean::before { content: " "; position: absolute; top: 0; bottom: 0; left: 6px; width: 2px; background-color: #e9ecef; }
+    .timeline-item-clean { position: relative; margin-bottom: 25px; }
+    .timeline-item-clean:last-child { margin-bottom: 0; }
+    .timeline-marker { position: absolute; left: -21px; top: 0px; width: 14px; height: 14px; border-radius: 50%; background: white; border: 3px solid #3498db; z-index: 2; }
+    .marker-manutencao { border-color: #e74c3c; } 
+    .marker-locacao { border-color: #f39c12; }
+    .timeline-content-clean { padding-left: 10px; }
+    .timeline-title { font-size: 0.95rem; color: #2c3e50; font-weight: 700; margin-bottom: 4px; }
+    .timeline-row { margin-bottom: 2px; font-size: 0.85rem; color: #555; line-height: 1.4; }
+    .timeline-label { font-weight: 700; color: #7f8c8d; margin-right: 5px; }
+
+    /* CSS Extra Abas */
+    .nav-tabs .nav-link { color: #6c757d; }
+    .nav-tabs .nav-link.active { color: #212529 !important; border-bottom: 3px solid #212529 !important; background: transparent; }
+    .nav-tabs .nav-link:hover { border-color: transparent; color: #212529; }
+
+    .accordion-button { font-weight: 600; color: #2c3e50; background-color: #fff; box-shadow: none !important; padding: 15px; }
+    .accordion-button:not(.collapsed) { color: #e74c3c; background-color: #fff5f5; }
+    .accordion-item { border: 1px solid #eee; margin-bottom: 10px; border-radius: 8px !important; overflow: hidden; }
 </style>
 
 <div id="contratos-page" class="page-content active">
@@ -97,7 +127,7 @@
         <div class="col-md-4">
             <div class="card card-overview bg-gradient-success">
                 <div class="d-flex justify-content-between align-items-center h-100">
-                    <div><h3>{{ valor_total_mensal | currency }}</h3><small>Receita Mensal Fixa</small></div>
+                    <div><h3>{{ valor_total_mensal | currency }}</h3><small>Receita Fixa Mensal</small></div>
                     <i class="fas fa-dollar-sign fa-3x opacity-25"></i>
                 </div>
             </div>
@@ -114,9 +144,12 @@
 
     <div id="contratoDetalhe" class="card shadow border-0 mb-4" style="display: none;">
         <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-file-signature me-2 text-primary"></i> Detalhes: <span id="det_numero" class="text-secondary"></span></h5>
+            <h5 class="mb-0 fw-bold text-dark">
+                <i class="fas fa-file-signature me-2 text-primary"></i> Detalhes: <span id="det_numero" class="text-secondary"></span>
+            </h5>
             <button class="btn btn-sm btn-outline-secondary" onclick="fecharDetalhes()">Voltar</button>
         </div>
+
         <div class="card-body">
             <div class="row">
                 <div class="col-md-8">
@@ -135,39 +168,55 @@
                             <div id="det_valor" class="text-success fw-bold fs-5"></div>
                         </div>
                     </div>
-                    
-                    <div class="mt-4 p-3 bg-light rounded border">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3 text-primary"><i class="fas fa-cubes fa-2x"></i></div>
-                            <div>
-                                <small class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">Configuração de Pool Global</small>
-                                <div id="det_pool_global" class="fw-bold text-dark fs-6"></div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
+
                 <div class="col-md-4 ps-md-5 border-start">
-                    <label class="small text-muted fw-bold mb-3 d-block">GERENCIAMENTO</label>
-                    <div class="d-grid gap-2">
-                        <a id="btn_pdf" href="#" target="_blank" class="btn btn-outline-danger text-start"><i class="fas fa-file-pdf me-2"></i> Visualizar Contrato PDF</a>
-                        <button class="btn btn-outline-primary text-start" onclick="abrirModalEditar()"><i class="fas fa-edit me-2"></i> Editar Informações</button>
-                        <button id="btn_cancelar_modal" class="btn btn-outline-secondary text-start" onclick="abrirModalCancelar()"><i class="fas fa-ban me-2"></i> Cancelar Contrato</button>
+                    <label class="small text-uppercase text-muted fw-bold mb-3 d-block spacing-1">Gerenciar Contrato</label>
+                    <div class="d-flex flex-column gap-2">
+                        <button class="btn btn-light text-start border shadow-sm py-2" onclick="abrirHistoricoContrato()">
+                            <i class="fas fa-history me-3 text-secondary opacity-75" style="width: 20px; text-align: center;"></i> 
+                            <span class="fw-semibold text-dark">Histórico</span>
+                        </button>
+                        
+                        <a id="btn_exportar" href="#" target="_blank" class="btn btn-light text-start border shadow-sm py-2">
+                            <i class="fas fa-file-export me-3 text-secondary opacity-75" style="width: 20px; text-align: center;"></i>
+                            <span class="fw-semibold text-dark">Exportar Resumo</span>
+                        </a>
+                        
+                        <a id="btn_pdf" href="#" target="_blank" class="btn btn-light text-start border shadow-sm py-2">
+                            <i class="fas fa-file-pdf me-3 text-secondary opacity-75" style="width: 20px; text-align: center;"></i>
+                            <span class="fw-semibold text-dark">PDF Assinado</span>
+                        </a>
+                        
+                        <button class="btn btn-light text-start border shadow-sm py-2" onclick="abrirModalEditar()">
+                            <i class="fas fa-pen me-3 text-secondary opacity-75" style="width: 20px; text-align: center;"></i>
+                            <span class="fw-semibold text-dark">Editar Contrato</span>
+                        </button>
+                        
+                        <button class="btn btn-light text-start border shadow-sm py-2" onclick="abrirModalCancelar()">
+                            <i class="fas fa-ban me-3 text-danger opacity-75" style="width: 20px; text-align: center;"></i>
+                            <span class="fw-semibold text-danger">Cancelar Contrato</span>
+                        </button>
                     </div>
                 </div>
             </div>
-            <h6 class="mt-5 mb-3 fw-bold text-secondary text-uppercase small border-bottom pb-2"><i class="fas fa-print me-2"></i> Impressoras Vinculadas</h6>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light text-muted small">
+
+            <h6 class="mt-5 mb-3 fw-bold text-secondary text-uppercase small border-bottom pb-2 d-flex justify-content-between">
+                <span><i class="fas fa-print me-2"></i> Equipamentos Vinculados</span>
+                <small class="text-muted fw-normal">Clique na linha para ver detalhes</small>
+            </h6>
+            
+            <div class="table-responsive" style="background-color: #f8f9fa; padding: 15px; border-radius: 10px;">
+                <table class="table table-pro mb-0">
+                    <thead>
                         <tr>
-                            <th class="ps-3 border-0">MODELO / SERIAL</th>
-                            <th class="border-0">TIPO FRANQUIA</th>
-                            <th class="border-0">DETALHES FRANQUIA</th>
-                            <th class="text-end border-0">VALOR LOCAÇÃO</th>
-                            <th class="border-0" width="50">HISTÓRICO</th>
+                            <th class="ps-3">Equipamento (MLT)</th>
+                            <th>Franquia & Config</th>
+                            <th class="text-end">Valor Locação</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody id="det_lista_imp" class="border-top-0"></tbody>
+                    <tbody id="det_lista_imp"></tbody>
                 </table>
             </div>
         </div>
@@ -175,7 +224,7 @@
 
     <ul class="nav nav-tabs" id="myTab">
         <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabAtivos">Ativos</a></li>
-        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabCancelados">Cancelados</a></li>
+        <li class="nav-item"><a class="nav-link text-danger" data-bs-toggle="tab" href="#tabCancelados">Cancelados</a></li>
     </ul>
 
     <div class="tab-content">
@@ -183,14 +232,12 @@
             <div class="row g-3">
                 {% for c in contratos_ativos %}
                 <div class="col-md-4">
-                    <div class="card contrato-card border-class-{{ c.classificacao_abc }} h-100" onclick="verDetalhes('{{ c.id }}')">
+                    <div class="card contrato-card border-class-A h-100" onclick="verDetalhes('{{ c.id }}')">
                         <div class="card-body p-3 d-flex flex-column">
-                            
                             <div class="mb-3">
                                 <h5 class="fw-bold text-dark mb-0 text-truncate" title="{{ c.cliente.nome }}">{{ c.cliente.nome }}</h5>
                                 <small class="text-muted fw-bold">Contrato: {{ c.numero_contrato }}</small>
                             </div>
-
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
                                     <span class="info-label">Mensalidade</span>
@@ -206,64 +253,220 @@
                                 </div>
                                 <div class="col-6 mt-2 text-end">
                                     <span class="info-label">Fechamento</span>
-                                    <span class="info-value">Dia {{ c.dia_vencimento }}</span>
+                                    <span class="info-value">Dia {{ c.cliente.data_fechamento if c.cliente.data_fechamento else '-' }}</span>
                                 </div>
                             </div>
-
                             <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
                                 <div>
                                     <span class="info-label" style="color: #e74c3c;">Vencimento Contrato</span>
                                     <span class="fw-bold text-dark small">{{ c.data_fim.strftime('%d/%m/%Y') }}</span>
                                 </div>
-                                <div class="btn-detalhes-icon">
-                                    <i class="fas fa-arrow-right"></i>
+                                <div class="btn-detalhes-icon"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12 text-center py-5 text-muted"><p>Nenhum contrato ativo encontrado.</p></div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="tabCancelados">
+            <div class="row g-3">
+                {% for c in contratos_cancelados %}
+                <div class="col-md-4">
+                    <div class="card contrato-card border-class-C h-100" style="opacity: 0.9;" onclick="verDetalhes('{{ c.id }}')">
+                        <div class="card-body p-3 d-flex flex-column">
+                            <div class="mb-3">
+                                <h5 class="fw-bold text-secondary mb-0 text-truncate" title="{{ c.cliente.nome }}">{{ c.cliente.nome }}</h5>
+                                <small class="text-muted">Contrato: {{ c.numero_contrato }}</small>
+                            </div>
+                            
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <span class="info-label">Mensalidade</span>
+                                    <span class="info-value-big text-secondary">{{ c.valor_mensal_total | currency }}</span>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <span class="info-label">Status</span>
+                                    <span class="badge-status-card bg-status-cancelado">{{ c.status }}</span>
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <span class="info-label">Motivo Cancelamento</span>
+                                    <div class="text-danger small text-truncate" title="{{ c.justificativa_cancelamento }}">
+                                        {{ c.justificativa_cancelamento }}
+                                    </div>
                                 </div>
                             </div>
-
+                            
+                            <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="info-label">Cancelado em</span>
+                                    <span class="fw-bold text-dark small">{{ c.data_fim.strftime('%d/%m/%Y') }}</span>
+                                </div>
+                                <div>
+                                    <a href="{{ url_for('reativar_contrato', id=c.id) }}" 
+                                       class="btn btn-sm btn-outline-success" 
+                                       title="Reativar Contrato"
+                                       onclick="event.stopPropagation(); return confirm('Deseja reativar este contrato? As impressoras voltarão a ficar Locadas.');">
+                                        <i class="fas fa-undo"></i>
+                                    </a>
+                                    
+                                    <a href="{{ url_for('excluir_contrato', id=c.id) }}" 
+                                       class="btn btn-sm btn-outline-danger ms-1" 
+                                       title="Excluir Permanentemente"
+                                       onclick="event.stopPropagation(); return confirm('ATENÇÃO: Isso apagará o contrato para sempre. Confirmar?');">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 {% else %}
                 <div class="col-12 text-center py-5 text-muted">
-                    <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
-                    <p>Nenhum contrato ativo encontrado.</p>
+                    <p>Nenhum contrato cancelado no histórico.</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
+    </div>
+</div>
 
-        <div class="tab-pane fade" id="tabCancelados">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
-                            <thead class="bg-light small text-muted">
-                                <tr>
-                                    <th class="ps-4 border-0">CLIENTE</th>
-                                    <th class="border-0">Nº CONTRATO</th>
-                                    <th class="border-0">CANCELADO EM</th>
-                                    <th class="border-0">JUSTIFICATIVA</th>
-                                    <th class="pe-4 text-end border-0">AÇÃO</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for c in contratos_cancelados %}
-                                <tr>
-                                    <td class="ps-4 fw-bold text-dark">{{ c.cliente.nome }}</td>
-                                    <td>{{ c.numero_contrato }}</td>
-                                    <td>{{ c.data_fim.strftime('%d/%m/%Y') }}</td>
-                                    <td><small class="text-muted fst-italic">{{ c.justificativa_cancelamento }}</small></td>
-                                    <td class="pe-4 text-end">
-                                        <a href="{{ url_for('reativar_contrato', id=c.id) }}" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold" onclick="return confirm('Deseja reativar este contrato?')">
-                                            <i class="fas fa-undo me-1"></i> Reativar
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="5" class="text-center py-5 text-muted">Nenhum contrato cancelado.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+<div class="modal fade" id="modalContrato" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content border-0 shadow-lg">
+            <form id="formContrato" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="contrato_id" id="form_contrato_id">
+                
+                <div class="modal-header modal-header-modern">
+                    <div>
+                        <h4 class="modal-title fw-bold" id="modalTitle"><i class="fas fa-file-signature me-2"></i>Novo Contrato</h4>
+                        <p class="mb-0 opacity-75 small">Preencha os dados abaixo.</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <div class="modal-body bg-light px-4 py-3">
+                    
+                    <h6 class="modal-section-title"><i class="fas fa-info-circle me-2"></i>1. Informações Básicas</h6>
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Cliente</label>
+                                    <select class="form-select form-control-modern" name="cliente_id" id="form_cliente" required onchange="aoMudarCliente()">
+                                        <option value="" data-fechamento="" data-nome="">Selecione...</option>
+                                        {% for cl in clientes %}
+                                        <option value="{{ cl.id }}" data-fechamento="{{ cl.data_fechamento }}" data-nome="{{ cl.nome }}">{{ cl.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted">Nº Contrato (Auto)</label>
+                                    <input type="text" class="form-control form-control-modern fw-bold text-primary" name="numero_contrato" id="form_numero" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-muted">Fechamento</label>
+                                    <input type="number" class="form-control form-control-modern bg-white" name="dia_vencimento" id="form_fechamento" readonly>
+                                </div>
+                                
+                                <div class="col-md-6"><label class="form-label small fw-bold text-muted">Início Vigência</label><input type="date" class="form-control form-control-modern" name="data_inicio" id="form_inicio" required></div>
+                                <div class="col-md-6"><label class="form-label small fw-bold text-muted">Fim Vigência</label><input type="date" class="form-control form-control-modern" name="data_fim" id="form_fim" required></div>
+
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold text-muted">Arquivo PDF Assinado</label>
+                                    <input type="file" class="form-control form-control-modern" name="arquivo_contrato" accept=".pdf">
+                                    <div class="form-text small"><i class="fas fa-exclamation-circle me-1"></i> Selecione o arquivo digitalizado do contrato assinado.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="modal-section-title"><i class="fas fa-coins me-2"></i>2. Custos e Franquias</h6>
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <div class="custo-creator-box mb-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="small fw-bold text-muted">Tipo</label>
+                                        <select id="novo_custo_tipo" class="form-select form-select-sm">
+                                            <option value="Compartilhada">Compartilhada (Pool)</option>
+                                            <option value="Individual">Individual</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2"><label class="small fw-bold text-muted">Páginas</label><input type="number" id="novo_custo_paginas" class="form-control form-select-sm" placeholder="0"></div>
+                                    <div class="col-md-2"><label class="small fw-bold text-muted">Valor (R$)</label><input type="text" id="novo_custo_valor" class="form-control form-select-sm" placeholder="0,00"></div>
+                                    <div class="col-md-2"><label class="small fw-bold text-muted">Excedente</label><input type="text" id="novo_custo_excedente" class="form-control form-select-sm" placeholder="0,00"></div>
+                                    <div class="col-md-3">
+                                        <button type="button" id="btnSalvarCusto" class="btn btn-sm btn-dark w-100 fw-bold shadow-sm" onclick="salvarCustoForm()"><i class="fas fa-plus"></i> Criar</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="lista_custos_visual" class="d-flex flex-wrap"></div>
+                            <div id="inputs_custos_hidden"></div>
+                        </div>
+                    </div>
+
+                    <h6 class="modal-section-title mb-2"><i class="fas fa-print me-2"></i>3. Equipamentos Vinculados</h6>
+                    
+                    <div class="card border-0 shadow-sm">
+                        <div class="custom-scroll-box" id="container_tabela_imp">
+                            <table class="table table-bordered table-hover mb-0 align-middle">
+                                <thead class="bg-light small text-muted">
+                                    <tr>
+                                        <th style="width: 40%; padding-left: 15px;">IMPRESSORA</th>
+                                        <th style="width: 35%;">VINCULAR CUSTO</th>
+                                        <th style="width: 20%;">VALOR (R$)</th>
+                                        <th style="width: 5%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyImp"></tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="fixed-action-bar">
+                            <button type="button" class="btn btn-sm btn-success px-4 rounded-pill fw-bold shadow-sm" onclick="addLinhaImpressora()">
+                                <i class="fas fa-plus me-1"></i> Adicionar Máquina
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <div class="modal-footer border-top-0 bg-white py-3">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-5 rounded-pill fw-bold shadow">Salvar Contrato</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalHistoricoImpressora" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white border-bottom">
+                <h5 class="modal-title fw-bold text-dark">Histórico: <span id="hist_titulo_modal" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-light p-0">
+                <ul class="nav nav-tabs nav-justified bg-white" id="histTabsImp" role="tablist">
+                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-mov-imp">Movimentações</button></li>
+                    <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#tab-manut-imp">Manutenções</button></li>
+                    <li class="nav-item"><button class="nav-link text-success" data-bs-toggle="tab" data-bs-target="#tab-insumos-imp">Insumos/Itens</button></li>
+                </ul>
+                <div class="tab-content p-4">
+                    <div class="tab-pane fade show active" id="tab-mov-imp"><ul class="timeline-clean" id="lista_movimentacoes"></ul></div>
+                    <div class="tab-pane fade" id="tab-manut-imp"><div class="accordion" id="accordionManutencoes"></div></div>
+                    <div class="tab-pane fade" id="tab-insumos-imp">
+                        <div class="table-responsive bg-white border rounded shadow-sm">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead class="bg-light small text-muted"><tr><th class="ps-3">Data</th><th>Produto</th><th class="text-center">Qtd</th><th class="text-end pe-3">Pedido</th></tr></thead>
+                                <tbody id="tabelaInsumosContrato"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -271,75 +474,39 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalContrato" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+<div class="modal fade" id="modalHistoricoContrato" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
-            <form id="formContrato" method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="contrato_id" id="form_contrato_id">
-                <div class="modal-header bg-primary text-white border-0">
-                    <h5 class="modal-title fw-bold" id="modalTitle">Novo Contrato</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body bg-light">
-                    <div class="card border-0 shadow-sm mb-3">
-                        <div class="card-body">
-                            <h6 class="text-primary fw-bold mb-3 border-bottom pb-2 text-uppercase" style="font-size: 0.8rem;">1. Dados Gerais & Pool Global</h6>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label small fw-bold text-muted">Cliente</label>
-                                    <select class="form-select border-0 shadow-sm" name="cliente_id" id="form_cliente" required>
-                                        <option value="">Selecione...</option>
-                                        {% for cl in clientes %}
-                                        <option value="{{ cl.id }}">{{ cl.nome }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-4"><label class="form-label small fw-bold text-muted">Nº Contrato</label><input type="text" class="form-control border-0 shadow-sm" name="numero_contrato" id="form_numero" required></div>
-                                <div class="col-md-4"><label class="form-label small fw-bold text-muted">PDF Assinado</label><input type="file" class="form-control border-0 shadow-sm" name="arquivo_contrato" accept=".pdf"></div>
-                                
-                                <div class="col-md-3"><label class="form-label small fw-bold text-muted">Início</label><input type="date" class="form-control border-0 shadow-sm" name="data_inicio" id="form_inicio" required></div>
-                                <div class="col-md-3"><label class="form-label small fw-bold text-muted">Fim</label><input type="date" class="form-control border-0 shadow-sm" name="data_fim" id="form_fim" required></div>
-                                
-                                <div class="col-md-3 border-start ps-4">
-                                    <label class="form-label small fw-bold text-primary">Pool Global (Páginas)</label>
-                                    <input type="number" class="form-control border-primary" name="franquia_global_qtde" id="form_pool" placeholder="Opcional">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-primary">Excedente Global (R$)</label>
-                                    <input type="text" class="form-control border-primary" name="valor_excedente_global" id="form_exc_pool" placeholder="0,00">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="modal-header bg-white border-bottom pb-0">
+                <h5 class="modal-title fw-bold text-dark mb-3"><i class="fas fa-history me-2 text-secondary"></i>Linha do Tempo</h5>
+                <button type="button" class="btn-close mb-3" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="bg-white px-4 border-bottom">
+                <ul class="nav nav-tabs nav-justified border-0" id="histTabsContrato" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active border-0 border-bottom border-3 border-dark rounded-0 fw-bold text-dark py-3" data-bs-toggle="tab" data-bs-target="#tab-fin" type="button">
+                            <i class="fas fa-coins me-2"></i>Financeiro
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link border-0 border-bottom border-3 border-transparent rounded-0 fw-bold text-secondary py-3" data-bs-toggle="tab" data-bs-target="#tab-mov" type="button">
+                            <i class="fas fa-exchange-alt me-2"></i>Movimentações
+                        </button>
+                    </li>
+                </ul>
+            </div>
 
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body p-0">
-                            <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-white">
-                                <h6 class="text-primary fw-bold mb-0 text-uppercase" style="font-size: 0.8rem;">2. Impressoras Vinculadas</h6>
-                                <button type="button" class="btn btn-sm btn-success px-3 rounded-pill shadow-sm" onclick="addLinhaImpressora()"><i class="fas fa-plus me-1"></i> Adicionar Máquina</button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered mb-0">
-                                    <thead class="bg-light small text-muted">
-                                        <tr>
-                                            <th style="width: 35%;">IMPRESSORA</th>
-                                            <th style="width: 15%;">TIPO FRANQUIA</th>
-                                            <th style="width: 15%;">FRANQUIA IND.</th>
-                                            <th style="width: 15%;">EXCEDENTE IND.</th>
-                                            <th style="width: 15%;">LOCAÇÃO (R$)</th>
-                                            <th style="width: 5%;"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyImp"></tbody>
-                                </table>
-                            </div>
-                        </div>
+            <div class="modal-body bg-light p-4">
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="tab-fin">
+                        <ul class="timeline-clean" id="timelineFin"></ul>
+                    </div>
+                    <div class="tab-pane fade" id="tab-mov">
+                        <ul class="timeline-clean" id="timelineMov"></ul>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 bg-light">
-                    <button type="submit" class="btn btn-primary px-4 rounded-pill fw-bold shadow-sm">Salvar Contrato</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -349,51 +516,10 @@
         <div class="modal-content border-0 shadow">
             <form action="{{ url_for('cancelar_contrato_route') }}" method="POST">
                 <input type="hidden" name="contrato_id" id="cancel_id">
-                <div class="modal-header bg-danger text-white border-0">
-                    <h5 class="modal-title">Cancelar Contrato</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning-emphasis">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Todas as impressoras vinculadas voltarão para o status <strong>Disponível</strong> no Estoque.
-                    </div>
-                    <label class="form-label fw-bold">Motivo do Cancelamento:</label>
-                    <textarea class="form-control bg-light border-0" name="justificativa" rows="3" required placeholder="Digite o motivo..."></textarea>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="submit" class="btn btn-danger px-4 rounded-pill">Confirmar</button>
-                </div>
+                <div class="modal-header bg-danger text-white border-0"><h5 class="modal-title">Cancelar Contrato</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><label>Motivo:</label><textarea class="form-control" name="justificativa" required></textarea></div>
+                <div class="modal-footer"><button type="submit" class="btn btn-danger">Confirmar</button></div>
             </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalHistoricoImpressora" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0">
-            <div class="modal-header bg-white border-bottom-0">
-                <div>
-                    <h5 class="modal-title fw-bold text-dark mb-0" id="hist_titulo">Histórico</h5>
-                    <small class="text-muted" id="hist_subtitulo">S/N: -</small>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bg-light">
-                <ul class="nav nav-tabs nav-tabs-sm mb-3" id="tabHistImp">
-                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabMovs">Movimentações</button></li>
-                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabManut">Manutenções</button></li>
-                </ul>
-                <div class="tab-content">
-                    <div class="tab-pane fade show active" id="tabMovs">
-                        <div class="card border-0 shadow-sm"><div class="card-body p-0"><div id="listaMovimentacoes" class="p-4">Carregando...</div></div></div>
-                    </div>
-                    <div class="tab-pane fade" id="tabManut">
-                        <div class="accordion accordion-flush" id="accordionManutencoes"></div>
-                        <div id="msgSemManut" class="text-center text-muted py-4" style="display:none;">Nenhuma manutenção registrada.</div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -401,152 +527,442 @@
 
 {% block scripts %}
 <script>
+    // --- DADOS DO BACKEND ---
     const impressorasData = [
         {% for imp in impressoras_todas %}
-        { id: "{{ imp.id }}", nome: "{{ imp.modelo }} - {{ imp.serial }}", status: "{{ imp.status }}", loc: "{{ imp.localizacao }}" },
+        { 
+            id: "{{ imp.id }}", 
+            nome: "{{ imp.modelo }}", 
+            serial: "{{ imp.serial }}",
+            mlt: "{{ imp.mlt or '' }}",
+            status: "{{ imp.status }}",
+            loc: "{{ imp.localizacao }}" 
+        },
         {% endfor %}
     ];
 
+    let custosCadastrados = []; 
+    let contadorCustos = 1;
+    let custoEmEdicaoIndex = null;
     let contratoAtualId = null;
+    let contratoAtualDados = null;
     var modalHistImp = null;
+    var modalContrato = null;
+    var modalHistContrato = null;
 
     document.addEventListener("DOMContentLoaded", function() {
         modalHistImp = new bootstrap.Modal(document.getElementById('modalHistoricoImpressora'));
+        modalContrato = new bootstrap.Modal(document.getElementById('modalContrato'));
+        modalHistContrato = new bootstrap.Modal(document.getElementById('modalHistoricoContrato'));
     });
+
+    // --- FUNÇÕES DE CUSTOS ---
+    function salvarCustoForm() {
+        const tipo = document.getElementById('novo_custo_tipo').value;
+        const pags = document.getElementById('novo_custo_paginas').value || '0';
+        const valor = document.getElementById('novo_custo_valor').value || '0,00';
+        const exc = document.getElementById('novo_custo_excedente').value || '0,00';
+        
+        if(parseFloat(valor.replace('R$','').replace('.','').replace(',','.')) <= 0) { 
+            alert("Informe um valor válido."); return; 
+        }
+
+        if (custoEmEdicaoIndex !== null) {
+            let custoAtual = custosCadastrados[custoEmEdicaoIndex];
+            custoAtual.tipo = tipo;
+            custoAtual.paginas = pags;
+            custoAtual.valor = valor;
+            custoAtual.excedente = exc;
+            cancelarEdicao();
+        } else {
+            const custoObj = {
+                id: contadorCustos,
+                nome: `Custo ${contadorCustos}`, 
+                tipo: tipo,
+                paginas: pags,
+                valor: valor,
+                excedente: exc
+            };
+            custosCadastrados.push(custoObj);
+            contadorCustos++;
+        }
+
+        renderizarCustos(); 
+        atualizarSelectsImpressoras();
+        
+        // Limpa inputs
+        document.getElementById('novo_custo_paginas').value = '';
+        document.getElementById('novo_custo_valor').value = '';
+        document.getElementById('novo_custo_excedente').value = '';
+    }
+
+    function renderizarCustos() {
+        const divVisual = document.getElementById('lista_custos_visual');
+        const divHidden = document.getElementById('inputs_custos_hidden');
+        divVisual.innerHTML = ''; divHidden.innerHTML = '';
+
+        custosCadastrados.forEach((c, index) => {
+            let iconLetter = c.tipo === 'Compartilhada' ? 'C' : 'I';
+            let classeExtra = (index === custoEmEdicaoIndex) ? 'border-warning bg-light' : '';
+
+            divVisual.innerHTML += `
+                <div class="custo-badge ${classeExtra}" style="border-left: 4px solid #bbb; padding-right: 5px;">
+                    <div class="custo-badge-icon bg-secondary">${iconLetter}</div>
+                    <div class="me-3">
+                        <div class="fw-bold text-dark" style="font-size: 0.9rem;">${c.nome}</div>
+                        <div class="text-muted small">${c.paginas} pág | R$ ${c.valor}</div>
+                    </div>
+                    <button type="button" class="btn btn-sm text-primary me-1" onclick="editarCusto(${index})" title="Editar"><i class="fas fa-pen"></i></button>
+                    <button type="button" class="btn btn-sm text-danger" onclick="removerCusto(${index})" title="Remover"><i class="fas fa-times"></i></button>
+                </div>
+            `;
+
+            divHidden.innerHTML += `
+                <input type="hidden" name="custo_nome[]" value="${c.nome}">
+                <input type="hidden" name="custo_tipo[]" value="${c.tipo}">
+                <input type="hidden" name="custo_paginas[]" value="${c.paginas}">
+                <input type="hidden" name="custo_valor[]" value="${c.valor}">
+                <input type="hidden" name="custo_excedente[]" value="${c.excedente}">
+            `;
+        });
+        document.querySelectorAll('select[name="custo_vinculado[]"]').forEach(sel => aplicarCorLinha(sel));
+    }
+
+    function editarCusto(index) {
+        let c = custosCadastrados[index];
+        document.getElementById('novo_custo_tipo').value = c.tipo;
+        document.getElementById('novo_custo_paginas').value = c.paginas;
+        document.getElementById('novo_custo_valor').value = c.valor;
+        document.getElementById('novo_custo_excedente').value = c.excedente;
+        
+        custoEmEdicaoIndex = index;
+        
+        const btn = document.getElementById('btnSalvarCusto');
+        btn.innerHTML = '<i class="fas fa-check"></i> Atualizar';
+        btn.classList.remove('btn-dark');
+        btn.classList.add('btn-warning');
+        
+        renderizarCustos();
+        document.getElementById('novo_custo_valor').focus();
+    }
+
+    function removerCusto(index) {
+        if (index === custoEmEdicaoIndex) { cancelarEdicao(); return; }
+        
+        let nomeCusto = custosCadastrados[index].nome;
+        let emUso = false;
+        document.querySelectorAll('select[name="custo_vinculado[]"]').forEach(sel => { if(sel.value === nomeCusto) emUso = true; });
+
+        if(emUso && !confirm(`O custo "${nomeCusto}" está vinculado a impressoras. Se excluir, elas ficarão sem custo. Continuar?`)) return;
+        
+        if(emUso) {
+            document.querySelectorAll('select[name="custo_vinculado[]"]').forEach(sel => {
+                if(sel.value === nomeCusto) { sel.value = ""; aplicarCorLinha(sel); }
+            });
+        }
+
+        custosCadastrados.splice(index, 1);
+        if (custoEmEdicaoIndex !== null && index < custoEmEdicaoIndex) custoEmEdicaoIndex--;
+        renderizarCustos();
+        atualizarSelectsImpressoras();
+    }
+    
+    function cancelarEdicao() {
+        custoEmEdicaoIndex = null;
+        const btn = document.getElementById('btnSalvarCusto');
+        btn.innerHTML = '<i class="fas fa-plus"></i> Criar';
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-dark');
+        
+        document.getElementById('novo_custo_paginas').value = '';
+        document.getElementById('novo_custo_valor').value = '';
+        document.getElementById('novo_custo_excedente').value = '';
+        renderizarCustos();
+    }
+
+    // --- FUNÇÕES DE VÍNCULO IMPRESSORA ---
+    function gerarOpcoesCustos(selecionado = null) {
+        let html = '<option value="">Selecione um Custo...</option>';
+        custosCadastrados.forEach(c => {
+            let isSel = (selecionado === c.nome) ? 'selected' : '';
+            html += `<option value="${c.nome}" data-tipo="${c.tipo}" data-id="${c.id}" ${isSel}>${c.nome} (${c.tipo})</option>`;
+        });
+        return html;
+    }
+    
+    function atualizarSelectsImpressoras() {
+        document.querySelectorAll('select[name="custo_vinculado[]"]').forEach(sel => {
+            const valAtual = sel.value;
+            sel.innerHTML = gerarOpcoesCustos(valAtual);
+            aplicarCorLinha(sel); 
+        });
+    }
+
+    function gerarOpcoesImp(selecionado = null) {
+        var cliSelect = document.getElementById("form_cliente");
+        var cliNome = cliSelect.options[cliSelect.selectedIndex].getAttribute("data-nome") || "";
+        
+        let html = '<option value="">Selecione...</option>';
+        impressorasData.forEach(imp => {
+            let disp = (imp.status === 'Disponível');
+            let comCli = (imp.status === 'Locada' && imp.loc === cliNome && cliNome !== "");
+            
+            if (disp || comCli) {
+                let texto = `${imp.nome}`;
+                if(imp.mlt) texto += ` - MLT ${imp.mlt}`;
+                texto += ` (${imp.serial})`;
+                let stl = disp ? "" : "color:green; font-weight:bold;";
+                let sel = (selecionado == imp.id) ? 'selected' : '';
+                html += `<option value="${imp.id}" style="${stl}" ${sel}>${texto}</option>`;
+            } else if(selecionado == imp.id) {
+                html += `<option value="${imp.id}" selected>${imp.nome} (Atual - ${imp.loc})</option>`;
+            }
+        });
+        return html;
+    }
 
     function addLinhaImpressora(data = null) {
         const tbody = document.getElementById('tbodyImp');
         const tr = document.createElement('tr');
         
-        let options = '<option value="">Selecione...</option>';
-        impressorasData.forEach(imp => {
-            let label = imp.nome;
-            let style = "";
-            if(imp.status === 'Disponível') { label += " (Estoque)"; } 
-            else { label += ` (No Cliente: ${imp.loc})`; style = "color: #d35400; font-weight: bold;"; }
-            let selected = (data && data.id == imp.id) ? 'selected' : '';
-            options += `<option value="${imp.id}" style="${style}" ${selected}>${label}</option>`;
-        });
+        const idImp = data ? data.impressora_id : null;
+        const nomeCusto = data ? data.custo_nome : null;
+        const valorLoc = data ? data.valor : '';
 
         tr.innerHTML = `
-            <td class="p-2"><select class="form-select form-select-sm border-0 bg-light" name="impressora_id[]" required>${options}</select></td>
-            <td class="p-2">
-                <select class="form-select form-select-sm border-0 bg-light" name="tipo_franquia_item[]" onchange="toggleInputs(this)">
-                    <option value="Individual" ${data && data.tipo_franquia === 'Individual' ? 'selected' : ''}>Individual</option>
-                    <option value="Global" ${data && data.tipo_franquia === 'Global' ? 'selected' : ''}>Usa Pool Global</option>
-                </select>
-            </td>
-            <td class="p-2"><input type="number" class="form-control form-select-sm border-0 bg-light inp-ind" name="franquia_individual[]" value="${data ? data.franquia_val : ''}" placeholder="0"></td>
-            <td class="p-2"><input type="text" class="form-control form-select-sm border-0 bg-light inp-ind" name="excedente_individual[]" value="${data ? data.excedente_val : ''}" placeholder="0,00"></td>
-            <td class="p-2"><input type="text" class="form-control form-select-sm border-0 bg-light" name="valor_locacao[]" value="${data ? data.valor : ''}" required></td>
-            <td class="p-2 text-center"><button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove()"><i class="fas fa-times"></i></button></td>
+            <td class="p-2 ps-3"><select class="form-select form-control-modern" name="impressora_id[]" required>${gerarOpcoesImp(idImp)}</select></td>
+            <td class="p-2"><select class="form-select form-control-modern fw-bold" name="custo_vinculado[]" required onchange="aplicarCorLinha(this)">${gerarOpcoesCustos(nomeCusto)}</select></td>
+            <td class="p-2"><input type="text" class="form-control form-control-modern valor-locacao" name="valor_locacao[]" value="${valorLoc}" placeholder="0,00"></td>
+            <td class="p-2 text-center"><button type="button" class="btn btn-link text-danger" onclick="this.closest('tr').remove()"><i class="fas fa-trash-alt"></i></button></td>
         `;
         tbody.appendChild(tr);
-        toggleInputs(tr.querySelector('select[name="tipo_franquia_item[]"]'));
+        if(nomeCusto) setTimeout(() => aplicarCorLinha(tr.querySelector('select[name="custo_vinculado[]"]')), 50);
+        const container = document.getElementById('container_tabela_imp');
+        if(container) setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
     }
 
-    function toggleInputs(select) {
+    function aplicarCorLinha(select) {
         const tr = select.closest('tr');
-        const inputs = tr.querySelectorAll('.inp-ind');
-        const isGlobal = select.value === 'Global';
-        inputs.forEach(inp => {
-            inp.disabled = isGlobal;
-            if(isGlobal) { inp.value = ""; inp.style.opacity = "0.5"; } else { inp.style.opacity = "1"; }
-        });
+        const opt = select.options[select.selectedIndex];
+        tr.className = ''; 
+        if(opt && opt.value !== "") {
+            const tipo = opt.getAttribute('data-tipo');
+            const id = opt.getAttribute('data-id');
+            if(tipo === 'Compartilhada') {
+                let idx = (id % 5) || 5;
+                tr.classList.add(`row-custo-${idx}`);
+            }
+        }
+    }
+
+    // --- OUTRAS FUNÇÕES ---
+    function aoMudarCliente() {
+        var sel = document.getElementById("form_cliente");
+        var opt = sel.options[sel.selectedIndex];
+        document.getElementById("form_fechamento").value = opt.getAttribute("data-fechamento")?.replace(/\D/g, '') || '';
+        document.querySelectorAll('select[name="impressora_id[]"]').forEach(s => { s.innerHTML = gerarOpcoesImp(s.value); });
     }
 
     function abrirModalNovo() {
+        cancelarEdicao();
         document.getElementById('formContrato').action = "{{ url_for('criar_contrato') }}";
         document.getElementById('modalTitle').innerText = "Novo Contrato";
         document.getElementById('formContrato').reset();
         document.getElementById('tbodyImp').innerHTML = "";
+        document.getElementById('lista_custos_visual').innerHTML = "";
+        document.getElementById('inputs_custos_hidden').innerHTML = "";
+        custosCadastrados = []; contadorCustos = 1;
+        
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoje.getDate()).padStart(2, '0');
+        document.getElementById('form_inicio').value = `${ano}-${mes}-${dia}`;
+        document.getElementById('form_numero').value = `01/${dia}${mes}${String(ano).slice(-2)}`;
         addLinhaImpressora();
-        new bootstrap.Modal(document.getElementById('modalContrato')).show();
+        modalContrato.show();
     }
-
+    
     function abrirModalEditar() {
-        if(!contratoAtualId) return;
-        fetch(`/api/contrato_detalhes/${contratoAtualId}`).then(r => r.json()).then(data => {
-            document.getElementById('formContrato').action = "{{ url_for('editar_contrato') }}";
-            document.getElementById('modalTitle').innerText = "Editar Contrato";
-            document.getElementById('form_contrato_id').value = data.id;
-            document.getElementById('form_cliente').value = ""; 
-            document.getElementById('form_numero').value = data.numero;
-            document.getElementById('form_inicio').value = data.data_inicio;
-            document.getElementById('form_fim').value = data.data_fim;
-            document.getElementById('form_pool').value = data.franquia_global;
-            document.getElementById('form_exc_pool').value = data.excedente_global;
-            document.getElementById('tbodyImp').innerHTML = "";
-            data.impressoras.forEach(imp => { addLinhaImpressora(imp); });
-            new bootstrap.Modal(document.getElementById('modalContrato')).show();
+        if(!contratoAtualDados) return;
+        cancelarEdicao();
+        const dados = contratoAtualDados;
+        document.getElementById('formContrato').action = "{{ url_for('editar_contrato') }}";
+        document.getElementById('modalTitle').innerHTML = "<i class='fas fa-edit me-2'></i>Editar Contrato";
+        document.getElementById('form_contrato_id').value = dados.id;
+        document.getElementById('form_numero').value = dados.numero;
+        document.getElementById('form_inicio').value = dados.data_inicio;
+        document.getElementById('form_fim').value = dados.data_fim;
+        document.getElementById('form_fechamento').value = dados.dia_vencimento;
+        
+        const selCliente = document.getElementById('form_cliente');
+        selCliente.value = dados.cliente_id;
+        aoMudarCliente(); 
+
+        custosCadastrados = []; contadorCustos = 1;
+        dados.custos.forEach(c => {
+            custosCadastrados.push({
+                id: contadorCustos++,
+                nome: c.nome,
+                tipo: c.tipo,
+                paginas: c.paginas,
+                valor: c.valor.toString().replace('.',','),
+                excedente: c.excedente.toString().replace('.',',')
+            });
         });
+        renderizarCustos(); 
+
+        document.getElementById('tbodyImp').innerHTML = "";
+        dados.impressoras.forEach(imp => {
+            addLinhaImpressora({
+                impressora_id: imp.impressora_id,
+                custo_nome: imp.custo_nome === "Sem Custo Vinculado" ? "" : imp.custo_nome,
+                valor: imp.valor.toString().replace('.',',')
+            });
+        });
+        modalContrato.show();
     }
 
     function verDetalhes(id) {
         contratoAtualId = id;
-        fetch(`/api/contrato_detalhes/${id}`).then(r => r.json()).then(data => {
-            document.getElementById('det_numero').innerText = data.numero;
-            document.getElementById('det_cliente').innerText = data.cliente_nome;
-            let st = data.status === 'Ativo' ? `<span class="badge bg-soft-A text-success border-0 px-3 py-2">ATIVO</span>` : `<span class="badge bg-soft-C text-danger border-0 px-3 py-2">CANCELADO</span>`;
-            document.getElementById('det_status').innerHTML = st;
-            document.getElementById('det_vigencia').innerText = `${data.data_inicio_br} até ${data.data_fim_br}`;
-            document.getElementById('det_valor').innerText = data.valor_mensal.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'});
-            document.getElementById('det_pool_global').innerText = data.franquia_global > 0 ? `${data.franquia_global} Páginas (Exc: R$ ${data.excedente_global})` : "Não configurado";
-            
-            if(data.pdf_url) { document.getElementById('btn_pdf').href = data.pdf_url; document.getElementById('btn_pdf').classList.remove('disabled'); } 
-            else { document.getElementById('btn_pdf').classList.add('disabled'); }
+        document.body.style.cursor = 'wait';
+        fetch(`/api/contrato_detalhes/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                document.body.style.cursor = 'default';
+                contratoAtualDados = data; 
+                document.getElementById('det_numero').innerText = data.numero;
+                document.getElementById('det_cliente').innerText = data.cliente_nome;
+                
+                let st = data.status === 'Ativo' ? `<span class="badge bg-soft-A text-success border-0 px-3 py-2">ATIVO</span>` : `<span class="badge bg-soft-C text-danger border-0 px-3 py-2">CANCELADO</span>`;
+                document.getElementById('det_status').innerHTML = st;
+                document.getElementById('det_vigencia').innerText = `${data.data_inicio_br} até ${data.data_fim_br}`;
+                document.getElementById('det_valor').innerText = data.valor_mensal.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'});
+                
+                const btnExp = document.getElementById('btn_exportar');
+                if(btnExp) btnExp.href = `/imprimir_contrato/${id}`;
 
-            const tbody = document.getElementById('det_lista_imp');
-            tbody.innerHTML = "";
-            data.impressoras.forEach(imp => {
-                const modeloSafe = imp.modelo.replace(/'/g, "\\'");
-                const serialSafe = imp.serial.replace(/'/g, "\\'");
-                tbody.innerHTML += `<tr>
-                    <td class="ps-3 border-0"><a href="#" class="text-decoration-none fw-bold text-dark" onclick="event.preventDefault(); verHistoricoImpressora(${imp.id}, '${modeloSafe}', '${serialSafe}')">${imp.modelo}</a><br><small class="text-muted">${imp.serial}</small></td>
-                    <td class="border-0"><span class="badge bg-light text-secondary border">${imp.tipo_franquia}</span></td>
-                    <td class="border-0 text-muted small">${imp.franquia}</td>
-                    <td class="text-end fw-bold border-0 text-success">R$ ${imp.valor.toFixed(2)}</td>
-                    <td class="text-end border-0"><button class="btn btn-sm btn-light text-primary" onclick="event.preventDefault(); verHistoricoImpressora(${imp.id}, '${modeloSafe}', '${serialSafe}')"><i class="fas fa-eye"></i></button></td>
-                </tr>`;
+                if(data.pdf_url) {
+                    document.getElementById('btn_pdf').href = data.pdf_url;
+                    document.getElementById('btn_pdf').classList.remove('disabled');
+                } else { document.getElementById('btn_pdf').classList.add('disabled'); }
+
+                const tbody = document.getElementById('det_lista_imp'); 
+                tbody.innerHTML = "";
+                if (data.impressoras.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Nenhuma impressora vinculada.</td></tr>';
+                } else {
+                    data.impressoras.forEach(imp => {
+                        let badgeHtml = imp.tipo_franquia === 'Compartilhada' ? `<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">POOL COMPARTILHADO</span>` : `<span class="badge bg-secondary bg-opacity-10 text-secondary border">INDIVIDUAL</span>`;
+                        
+                        let rowClass = "";
+                        let alertaHtml = "";
+                        
+                        if (imp.alerta_tipo === 'warning') {
+                            rowClass = "table-warning";
+                            alertaHtml = `<div class="mt-1"><span class="badge bg-warning text-dark"><i class="fas fa-tools me-1"></i> EM MANUTENÇÃO</span></div>`;
+                        } else if (imp.alerta_tipo === 'danger') {
+                            rowClass = "table-danger";
+                            let textoData = imp.data_evento ? `Desde ${imp.data_evento}` : "Recolhida";
+                            alertaHtml = `<div class="mt-1"><span class="badge bg-danger"><i class="fas fa-arrow-left me-1"></i> NO ESTOQUE</span> <small class="text-danger fw-bold ms-1">${textoData}</small></div>`;
+                        }
+                        let opacityStyle = (imp.alerta_tipo === 'danger') ? 'opacity: 0.7;' : '';
+
+                        tbody.innerHTML += `
+                        <tr style="cursor: pointer; ${opacityStyle}" class="${rowClass}" onclick="verHistoricoImpressora(${imp.impressora_id}, '${imp.modelo}')">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="printer-icon-box shadow-sm" style="background: white;"><i class="fas fa-print text-dark"></i></div>
+                                    <div>
+                                        <h6 class="mb-0 text-dark fw-bold">${imp.modelo}</h6>
+                                        <small class="text-secondary fw-bold d-block" style="font-size: 0.75rem;"><i class="fas fa-tag me-1"></i> MLT ${imp.mlt}</small>
+                                        <small class="text-muted d-block" style="font-size: 0.7rem;">S/N: ${imp.serial}</small>
+                                        ${alertaHtml}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="align-middle"><div class="d-flex flex-column"><div class="mb-1">${badgeHtml}</div><small class="text-dark fw-bold">${imp.custo_nome || '-'}</small><small class="text-muted" style="font-size: 0.75rem;">${imp.detalhes_franquia}</small></div></td>
+                            <td class="text-end align-middle"><span class="text-success fw-bold fs-6">R$ ${imp.valor.toFixed(2)}</span></td>
+                            <td class="text-end align-middle"><button class="btn btn-light btn-sm rounded-circle"><i class="fas fa-chevron-right"></i></button></td>
+                        </tr>`;
+                    });
+                }
+                document.getElementById('contratoDetalhe').style.display = 'block';
+                window.scrollTo({top:0, behavior:'smooth'});
             });
-            document.getElementById('contratoDetalhe').style.display = 'block';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function abrirHistoricoContrato() {
+        if(!contratoAtualId) return;
+        const containerFin = document.getElementById('timelineFin');
+        const containerMov = document.getElementById('timelineMov');
+        const loadingHtml = '<li class="text-center py-5"><div class="spinner-border text-secondary" role="status"></div></li>';
+        containerFin.innerHTML = loadingHtml; containerMov.innerHTML = loadingHtml;
+        modalHistContrato.show();
+        
+        fetch(`/api/contrato_historico_log/${contratoAtualId}`).then(r => r.json()).then(data => {
+            containerFin.innerHTML = ''; containerMov.innerHTML = '';
+            if(data.length === 0) {
+                const emptyHtml = '<li class="text-center text-muted py-5">Nenhum registro encontrado.</li>';
+                containerFin.innerHTML = emptyHtml; containerMov.innerHTML = emptyHtml;
+                return;
+            }
+            data.forEach(log => {
+                let targetContainer = null, icon = '', borderColor = '', titleColor = '';
+                if(log.acao.includes('Financeiro') || log.acao.includes('Reajuste') || log.acao.includes('Criação')) {
+                    targetContainer = containerFin;
+                    icon = log.acao.includes('Criação') ? '<i class="fas fa-flag text-dark"></i>' : '<i class="fas fa-dollar-sign text-success"></i>';
+                    borderColor = log.acao.includes('Criação') ? 'border-dark' : 'border-success';
+                    titleColor = 'text-dark';
+                } else {
+                    targetContainer = containerMov;
+                    if(log.acao.includes('Adição') || log.acao.includes('Inclusão')) {
+                        icon = '<i class="fas fa-plus text-primary"></i>'; borderColor = 'border-primary'; titleColor = 'text-dark';
+                    } else if(log.acao.includes('Remoção')) {
+                        icon = '<i class="fas fa-minus text-secondary"></i>'; borderColor = 'border-secondary'; titleColor = 'text-secondary';
+                    } else { icon = '<i class="fas fa-info text-muted"></i>'; borderColor = 'border-light'; titleColor = 'text-muted'; }
+                }
+
+                let detalhesFormatados = log.detalhes.replace(/(MLT:.*?)(\|)/g, '<span class="badge bg-secondary text-white fw-normal ms-1 me-1">$1</span>$2');
+                const itemHtml = `
+                <li class="timeline-item-clean">
+                    <div class="timeline-marker bg-white ${borderColor}" style="border-width: 2px; width:32px; height:32px; left:-40px; display:flex; align-items:center; justify-content:center; border-radius:50%; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">${icon}</div>
+                    <div class="timeline-content-clean ms-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1"><span class="fw-bold ${titleColor}" style="font-size: 0.95rem;">${log.acao}</span><small class="text-muted" style="font-size: 0.75rem;">${log.data}</small></div>
+                        <div class="card border-0 shadow-sm"><div class="card-body p-3 bg-white rounded border border-light"><p class="mb-0 text-secondary" style="font-size: 0.9rem; line-height: 1.5;">${detalhesFormatados}</p><div class="text-end mt-1"><small class="text-muted fst-italic" style="font-size: 0.7rem;">Por: ${log.usuario}</small></div></div></div>
+                    </div>
+                </li>`;
+                if(targetContainer) targetContainer.innerHTML += itemHtml;
+            });
+            if(containerFin.innerHTML === '') containerFin.innerHTML = '<li class="text-center text-muted py-5">Sem registros financeiros.</li>';
+            if(containerMov.innerHTML === '') containerMov.innerHTML = '<li class="text-center text-muted py-5">Sem movimentações.</li>';
         });
     }
 
     function fecharDetalhes() { document.getElementById('contratoDetalhe').style.display = 'none'; }
     function abrirModalCancelar() { document.getElementById('cancel_id').value = contratoAtualId; new bootstrap.Modal(document.getElementById('modalCancelar')).show(); }
-
-    function verHistoricoImpressora(id, modelo, serial) {
-        if (!modalHistImp) modalHistImp = new bootstrap.Modal(document.getElementById('modalHistoricoImpressora'));
-        document.getElementById('hist_titulo').innerText = modelo;
-        document.getElementById('hist_subtitulo').innerText = "S/N: " + serial;
-        document.getElementById('listaMovimentacoes').innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div></div>';
+    
+    function verHistoricoImpressora(id, modelo) {
+        if (!id) return;
+        document.getElementById('hist_titulo_modal').innerText = modelo;
+        var listaMov = document.getElementById('lista_movimentacoes');
+        var listaManut = document.getElementById('accordionManutencoes');
+        var tabelaInsumos = document.getElementById('tabelaInsumosContrato'); 
+        listaMov.innerHTML = '<li>Loading...</li>';
         
-        fetch('/api/historico_completo/' + id).then(response => response.json()).then(data => {
-            const listaMov = document.getElementById('listaMovimentacoes');
-            listaMov.innerHTML = "";
-            if (data.movimentacoes.length > 0) {
-                data.movimentacoes.forEach(mov => {
-                    listaMov.innerHTML += `<div class="timeline-item"><span class="timeline-date">${mov.data}</span><div class="fw-bold text-dark">${mov.tipo}</div><div class="small text-muted">Origem: ${mov.origem} &rarr; Destino: ${mov.destino}</div><div class="small mt-1 text-dark">Contador: <strong>${mov.contador}</strong></div>${mov.obs ? `<div class="small text-muted fst-italic mt-1">"${mov.obs}"</div>` : ''}</div>`;
-                });
-            } else { listaMov.innerHTML = '<div class="text-center text-muted py-3">Nenhuma movimentação.</div>'; }
-
-            const listaManut = document.getElementById('accordionManutencoes');
-            listaManut.innerHTML = "";
-            const msgSemManut = document.getElementById('msgSemManut');
-            if (data.manutencoes.length > 0) {
-                msgSemManut.style.display = 'none';
-                data.manutencoes.forEach((os, index) => {
-                    let logsHtml = '<ul class="list-group list-group-flush mt-2">';
-                    os.logs.forEach(log => { logsHtml += `<li class="list-group-item bg-transparent px-0 py-2"><div class="d-flex justify-content-between small"><span class="fw-bold text-dark">${log.titulo}</span><span class="text-muted">${log.data}</span></div><div class="small text-muted">${log.obs}</div></li>`; });
-                    logsHtml += '</ul>';
-                    let badgeStatus = os.status === 'Aberta' ? 'bg-warning text-dark' : 'bg-success';
-                    listaManut.innerHTML += `<div class="accordion-item border-0 shadow-sm mb-2 rounded overflow-hidden"><h2 class="accordion-header" id="heading${index}"><button class="accordion-button collapsed bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}"><div class="w-100 d-flex justify-content-between me-3 align-items-center"><span class="fw-bold text-primary">O.S. #${os.numero}</span><span class="badge ${badgeStatus} ms-2">${os.status}</span><span class="small text-muted ms-auto">${os.inicio}</span></div></button></h2><div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#accordionManutencoes"><div class="accordion-body bg-white border-top"><div class="alert alert-light border small mb-0"><strong>Motivo:</strong> ${os.motivo}</div>${logsHtml}<div class="text-end small text-muted border-top pt-2 mt-3">Fim: ${os.fim}</div></div></div></div>`;
-                });
-            } else { msgSemManut.style.display = 'block'; }
+        fetch('/api/historico_completo/' + id).then(r=>r.json()).then(data => {
+            listaMov.innerHTML = ''; listaManut.innerHTML = ''; tabelaInsumos.innerHTML = '';
+            if(data.movimentacoes) data.movimentacoes.forEach(m => {
+                 listaMov.innerHTML += `<li class="timeline-item-clean"><div class="timeline-marker"></div><div class="timeline-content-clean"><div class="timeline-title">${m.tipo} <small class="float-end text-muted fw-normal">${m.data}</small></div><div class="timeline-row">${m.origem} &rarr; <strong>${m.destino}</strong></div></div></li>`;
+            });
+            if(data.manutencoes) data.manutencoes.forEach((os,idx) => {
+                 listaManut.innerHTML += `<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#os${idx}">O.S. #${os.numero} - ${os.status}</button></h2><div id="os${idx}" class="accordion-collapse collapse"><div class="accordion-body">${os.motivo}</div></div></div>`;
+            });
+            if(data.insumos) data.insumos.forEach(i => {
+                tabelaInsumos.innerHTML += `<tr><td class="ps-3">${i.data}</td><td>${i.produto}</td><td class="text-center">${i.qtd}</td><td class="text-end pe-3">#${i.pedido}</td></tr>`;
+            });
             modalHistImp.show();
-        }).catch(err => { console.error(err); alert("Erro ao carregar histórico."); });
+        });
     }
 </script>
 {% endblock %}
