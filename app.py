@@ -771,7 +771,7 @@ def movimentar_impressora():
 
         if tipo_movimentacao == 'Manutenção':
             ultima_os = Manutencao.query.order_by(Manutencao.numero_ordem.desc()).first()
-            proximo_numero = (ultima_os.numero_ordem + 1) if (ultima_os and ultima_os.numero_ordem) else 1000
+            proximo_numero = (ultima_os.numero_ordem + 1) if (ultima_os and ultima_os.numero_ordem) else 1
             nova_os = Manutencao(impressora_id=imp.id, numero_ordem=proximo_numero, data_inicio=datetime.now(), status_atual='Aberta', motivo_inicial=observacao or "Manutenção Solicitada")
             db.session.add(nova_os)
             db.session.flush() 
@@ -987,28 +987,74 @@ def api_historico_impressora(id):
     lista_unificada.sort(key=lambda x: x['data_obj'], reverse=True)
     return jsonify(lista_unificada)
 
+# --- SUBSTITUIR NO app.py ---
+
 @app.route('/criar_impressora', methods=['POST'])
 def criar_impressora():
     try:
-        nova = Impressora(marca=request.form['marca'], modelo=request.form['modelo'], serial=request.form['serial'], mlt=request.form['mlt'], contador=int(request.form['contador'] or 0), status='Disponível', localizacao='Estoque', observacao=request.form['observacao'])
+        marca = request.form['marca']
+        modelo_input = request.form['modelo'].strip() # Ex: "M420dn"
+        
+        # Lógica: Se o usuário digitou "Brother M420dn", mantemos. 
+        # Se digitou só "M420dn", viramos "Brother M420dn".
+        if modelo_input.lower().startswith(marca.lower()):
+            modelo_final = modelo_input # Já estava completo
+        else:
+            modelo_final = f"{marca} {modelo_input}"
+
+        nova = Impressora(
+            marca=marca, 
+            modelo=modelo_final, # Salva o nome completo
+            serial=request.form['serial'],
+            mlt=request.form['mlt'],
+            contador=int(request.form['contador'] or 0),
+            status='Disponível', 
+            localizacao='Estoque',
+            observacao=request.form['observacao']
+        )
         db.session.add(nova)
         db.session.flush() 
         db.session.add(MovimentacaoImpressora(impressora_id=nova.id, tipo='Cadastro', origem='-', destino='Estoque', contador_momento=nova.contador, observacao='Cadastro inicial'))
         db.session.commit()
-        flash('Impressora cadastrada.')
-    except IntegrityError: db.session.rollback(); flash('ERRO: Serial já existe!')
-    except Exception as e: db.session.rollback(); flash(f'Erro: {str(e)}')
+        flash('Impressora cadastrada com sucesso.', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        flash('ERRO: Já existe uma impressora com este Serial!', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao cadastrar: {str(e)}', 'danger')
     return redirect(url_for('impressoras'))
 
 @app.route('/editar_impressora', methods=['POST'])
 def editar_impressora():
     try:
-        imp = Impressora.query.get(request.form.get('impressora_id'))
+        imp_id = request.form.get('impressora_id')
+        imp = Impressora.query.get(imp_id)
         if imp:
-            imp.marca = request.form['marca']; imp.modelo = request.form['modelo']; imp.serial = request.form['serial']; imp.mlt = request.form['mlt']; imp.observacao = request.form['observacao']
-            db.session.commit(); flash('Informações atualizadas.')
-    except Exception as e: db.session.rollback(); flash(f'Erro: {e}')
+            marca = request.form['marca']
+            modelo_input = request.form['modelo'].strip()
+            
+            # Mesma lógica de concatenação
+            if modelo_input.lower().startswith(marca.lower()):
+                modelo_final = modelo_input
+            else:
+                modelo_final = f"{marca} {modelo_input}"
+
+            imp.marca = marca
+            imp.modelo = modelo_final
+            imp.serial = request.form['serial']
+            imp.mlt = request.form['mlt']
+            imp.observacao = request.form['observacao']
+            
+            db.session.commit()
+            flash('Informações atualizadas.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao editar: {e}', 'danger')
     return redirect(url_for('impressoras'))
+
+
+
 
 @app.route('/excluir_impressora/<int:id>')
 def excluir_impressora(id):
