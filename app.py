@@ -25,28 +25,16 @@ db = SQLAlchemy(app)
 
 # --- UTILS ---
 def limpar_int(valor):
-    if not valor or str(valor).strip() == '':
-        return 0
-    try:
-        return int(valor)
-    except ValueError:
-        return 0
+    if not valor or str(valor).strip() == '': return 0
+    try: return int(valor)
+    except ValueError: return 0
 
 def limpar_float(valor_str):
-    if not valor_str or str(valor_str).strip() == '':
-        return 0.0
+    if not valor_str or str(valor_str).strip() == '': return 0.0
     try:
         limpo = str(valor_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
         return float(limpo)
-    except ValueError:
-        return 0.0
-
-def registrar_log(acao, detalhes):
-    try:
-        novo_log = SystemLog(acao=acao, detalhes=detalhes)
-        db.session.add(novo_log)
-    except Exception as e:
-        print(f"Erro log: {e}")
+    except ValueError: return 0.0
 
 # --- MODELS ---
 class Configuracao(db.Model):
@@ -60,6 +48,12 @@ class SystemLog(db.Model):
     data = db.Column(db.DateTime, default=datetime.now)
     acao = db.Column(db.String(100))
     detalhes = db.Column(db.Text)
+
+def registrar_log(acao, detalhes):
+    try:
+        novo_log = SystemLog(acao=acao, detalhes=detalhes)
+        db.session.add(novo_log)
+    except Exception as e: print(f"Erro log: {e}")
 
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -85,13 +79,6 @@ class Produto(db.Model):
     observacao = db.Column(db.String(200))
     ativo = db.Column(db.Boolean, default=True)
 
-    @property
-    def ultima_movimentacao(self):
-        return Movimentacao.query.filter(
-            Movimentacao.produto_id == self.id,
-            Movimentacao.status != 'Cancelado'
-        ).order_by(Movimentacao.data.desc()).first()
-
 class Venda(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=False)
@@ -108,7 +95,6 @@ class Venda(db.Model):
     status_geral = db.Column(db.String(20), default='Ativa')
     justificativa_cancelamento = db.Column(db.String(255))
     observacao = db.Column(db.Text)
-    
     cliente = db.relationship('Cliente', backref='vendas')
     itens = db.relationship('ItemVenda', backref='venda', cascade="all, delete-orphan")
 
@@ -130,7 +116,6 @@ class PedidoSaida(db.Model):
     observacao = db.Column(db.String(200))
     status = db.Column(db.String(20), default='Ativo')
     justificativa_cancelamento = db.Column(db.String(255))
-    
     cliente = db.relationship('Cliente', backref='pedidos')
     itens = db.relationship('ItemPedido', backref='pedido', cascade="all, delete-orphan")
 
@@ -155,7 +140,6 @@ class Movimentacao(db.Model):
     pedido_id = db.Column(db.Integer, db.ForeignKey('pedido_saida.id'), nullable=True)
     status = db.Column(db.String(20), default='Ativo')
     justificativa_cancelamento = db.Column(db.String(255))
-    
     produto = db.relationship('Produto', backref='movimentacoes')
 
 class Impressora(db.Model):
@@ -193,7 +177,6 @@ class Manutencao(db.Model):
     data_fim = db.Column(db.DateTime)
     status_atual = db.Column(db.String(50), default='Aberta')
     motivo_inicial = db.Column(db.Text)
-    
     logs = db.relationship('LogManutencao', backref='manutencao_pai', cascade="all, delete-orphan")
 
 class LogManutencao(db.Model):
@@ -250,61 +233,49 @@ class Contrato(db.Model):
     arquivo_pdf = db.Column(db.String(200))
     justificativa_cancelamento = db.Column(db.Text)
     
-    # Outros relacionamentos
     itens = db.relationship('ContratoItem', backref='contrato', lazy=True)
     franquias = db.relationship('ContratoFranquia', backref='contrato', lazy=True)
     
-    # Campos antigos (mantidos para evitar erro de coluna faltando em migração)
+    # Campos legados
     franquia_global_qtde = db.Column(db.Integer, default=0)
     valor_excedente_global = db.Column(db.Float, default=0.0)
     
 class ContratoFranquia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     contrato_id = db.Column(db.Integer, db.ForeignKey('contrato.id'), nullable=False)
-    nome = db.Column(db.String(50)) # Ex: "Custo 1", "Custo 2"
+    nome = db.Column(db.String(50))
     tipo = db.Column(db.String(20)) # "Compartilhada" ou "Individual"
     franquia_paginas = db.Column(db.Integer, default=0)
     valor_franquia = db.Column(db.Float, default=0.0)
     valor_excedente = db.Column(db.Float, default=0.0)
-    
-    # Relacionamento reverso
     itens = db.relationship('ContratoItem', backref='franquia_pai', lazy=True)
 
 class ContratoItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     contrato_id = db.Column(db.Integer, db.ForeignKey('contrato.id'), nullable=False)
     impressora_id = db.Column(db.Integer, db.ForeignKey('impressora.id'), nullable=False)
-    
-    # Vincula ao custo criado
     franquia_id = db.Column(db.Integer, db.ForeignKey('contrato_franquia.id'), nullable=True)
-    
     valor_locacao_unitario = db.Column(db.Float, default=0.0)
+    tipo_franquia_item = db.Column(db.String(20)) # Legado/Fallback
     
-    # RELACIONAMENTO CORRIGIDO
-    impressora = db.relationship('Impressora')
+    impressora = db.relationship('Impressora') 
 
-    # (Os campos antigos mantidos para compatibilidade)
-    tipo_franquia_item = db.Column(db.String(20)) 
-
+# --- NOVO MODELO: HISTÓRICO DO CONTRATO ---
 class ContratoHistorico(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     contrato_id = db.Column(db.Integer, db.ForeignKey('contrato.id'), nullable=False)
     data = db.Column(db.DateTime, default=datetime.now)
     usuario = db.Column(db.String(50), default='Sistema')
-    acao = db.Column(db.String(50)) # Ex: Adição, Remoção, Reajuste
-    detalhes = db.Column(db.Text)   # Ex: "Impressora HP (S/N 123) adicionada"
+    acao = db.Column(db.String(50))
+    detalhes = db.Column(db.Text)
 
-# --- ADICIONE ESTA FUNÇÃO AUXILIAR ---
 def registrar_hist_contrato(contrato_id, acao, detalhes, usuario='Sistema'):
     try:
         novo = ContratoHistorico(contrato_id=contrato_id, acao=acao, detalhes=detalhes, usuario=usuario)
         db.session.add(novo)
-        # Nota: O commit deve ser feito pelo chamador ou aqui se for isolado.
-        # Para garantir, faremos flush aqui e deixamos o commit pro fluxo principal se estiver numa transação
         db.session.flush() 
     except Exception as e:
         print(f"Erro ao gravar historico contrato: {e}")
-
 
 # --- CONTEXTO ---
 @app.template_filter('currency')
@@ -313,8 +284,7 @@ def currency_filter(value):
     return "R$ {:,.2f}".format(value).replace(",", "X").replace(".", ",").replace("X", ".")
 
 @app.template_filter('formata_codigo')
-def formata_codigo(id):
-    return f"P{id:03d}"
+def formata_codigo(id): return f"P{id:03d}"
 
 @app.context_processor
 def utility_processor():
@@ -325,20 +295,16 @@ def utility_processor():
             db.session.add(config)
             db.session.commit()
         return dict(hoje=datetime.now(), config=config)
-    except:
-        return dict(hoje=datetime.now(), config=None)
+    except: return dict(hoje=datetime.now(), config=None)
 
 # --- ROTAS ---
 
 @app.route('/')
 def index():
-    # 1. Totais Gerais
     total_itens = db.session.query(func.sum(Produto.quantidade)).scalar() or 0
-    
     config = Configuracao.query.first()
     margem = config.margem_atencao_pct if config else 20
     dias_vencimento = config.dias_alerta_vencimento if config else 7
-    
     todos_produtos = Produto.query.all()
     itens_atencao = []
     for p in todos_produtos:
@@ -349,68 +315,34 @@ def index():
             elif p.quantidade <= limite:
                 itens_atencao.append({'produto': p, 'status': 'Baixo', 'classe': 'bg-warning text-dark', 'row_class': 'row-alert-orange'})
     itens_atencao.sort(key=lambda x: x['produto'].quantidade)
-
     data_limite = datetime.now().date() + timedelta(days=dias_vencimento)
     vendas_vencendo = Venda.query.filter(
-        Venda.status_pagamento != 'Pago',
-        Venda.status_geral != 'Cancelada',
-        Venda.data_vencimento <= data_limite
+        Venda.status_pagamento != 'Pago', Venda.status_geral != 'Cancelada', Venda.data_vencimento <= data_limite
     ).order_by(Venda.data_vencimento).all()
-
     total_alertas = len(itens_atencao) + len(vendas_vencendo)
-    
     mes_atual = datetime.now().month
     saidas_mes = db.session.query(func.sum(Movimentacao.quantidade)).filter(
-        Movimentacao.tipo.in_(['Saida_Locacao', 'Ajuste_Saida', 'Venda']),
-        Movimentacao.status != 'Cancelado',
-        extract('month', Movimentacao.data) == mes_atual
+        Movimentacao.tipo.in_(['Saida_Locacao', 'Ajuste_Saida', 'Venda']), Movimentacao.status != 'Cancelado', extract('month', Movimentacao.data) == mes_atual
     ).scalar() or 0
-
-    ultimas_entradas = Movimentacao.query.filter(
-        Movimentacao.tipo == 'Entrada',
-        Movimentacao.status != 'Cancelado'
-    ).order_by(Movimentacao.data.desc()).limit(30).all()
-
-    ultimas_saidas = Movimentacao.query.filter(
-        Movimentacao.tipo.in_(['Saida_Locacao', 'Venda', 'Ajuste_Saida']),
-        Movimentacao.status != 'Cancelado'
-    ).order_by(Movimentacao.data.desc()).limit(30).all()
-    
+    ultimas_entradas = Movimentacao.query.filter(Movimentacao.tipo == 'Entrada', Movimentacao.status != 'Cancelado').order_by(Movimentacao.data.desc()).limit(30).all()
+    ultimas_saidas = Movimentacao.query.filter(Movimentacao.tipo.in_(['Saida_Locacao', 'Venda', 'Ajuste_Saida']), Movimentacao.status != 'Cancelado').order_by(Movimentacao.data.desc()).limit(30).all()
     total_contratos = Contrato.query.filter_by(status='Ativo').count()
-
-    return render_template('dashboard.html', 
-                           total_itens=total_itens, 
-                           saidas_mes=saidas_mes,
-                           total_alertas=total_alertas,
-                           itens_atencao=itens_atencao,
-                           vendas_vencendo=vendas_vencendo,
-                           ultimas_entradas=ultimas_entradas,
-                           ultimas_saidas=ultimas_saidas,
-                           total_contratos=total_contratos)
+    return render_template('dashboard.html', total_itens=total_itens, saidas_mes=saidas_mes, total_alertas=total_alertas, itens_atencao=itens_atencao, vendas_vencendo=vendas_vencendo, ultimas_entradas=ultimas_entradas, ultimas_saidas=ultimas_saidas, total_contratos=total_contratos)
 
 @app.route('/notificacoes')
 def notificacoes():
     config = Configuracao.query.first()
     margem = config.margem_atencao_pct if config else 20
     dias_vencimento = config.dias_alerta_vencimento if config else 7
-    
     todos_produtos = Produto.query.all()
     itens_atencao = []
     for p in todos_produtos:
         if p.ativo:
             limite = p.minimo * (1 + margem / 100)
-            if p.quantidade <= p.minimo:
-                itens_atencao.append({'produto': p, 'status': 'Crítico', 'classe': 'bg-danger', 'row_class': 'row-alert-red'})
-            elif p.quantidade <= limite:
-                itens_atencao.append({'produto': p, 'status': 'Baixo', 'classe': 'bg-warning text-dark', 'row_class': 'row-alert-orange'})
-            
+            if p.quantidade <= p.minimo: itens_atencao.append({'produto': p, 'status': 'Crítico', 'classe': 'bg-danger', 'row_class': 'row-alert-red'})
+            elif p.quantidade <= limite: itens_atencao.append({'produto': p, 'status': 'Baixo', 'classe': 'bg-warning text-dark', 'row_class': 'row-alert-orange'})
     data_limite = datetime.now().date() + timedelta(days=dias_vencimento)
-    vendas_vencendo = Venda.query.filter(
-        Venda.status_pagamento != 'Pago',
-        Venda.status_geral != 'Cancelada',
-        Venda.data_vencimento <= data_limite
-    ).order_by(Venda.data_vencimento).all()
-    
+    vendas_vencendo = Venda.query.filter(Venda.status_pagamento != 'Pago', Venda.status_geral != 'Cancelada', Venda.data_vencimento <= data_limite).order_by(Venda.data_vencimento).all()
     return render_template('notificacoes.html', itens_atencao=itens_atencao, vendas_vencendo=vendas_vencendo)
 
 @app.route('/estoque')
@@ -420,71 +352,37 @@ def estoque():
     query = Produto.query
     if marca_filtro and marca_filtro != 'Todas': query = query.filter(Produto.marca.ilike(f'%{marca_filtro}%'))
     if apenas_disponiveis: query = query.filter(Produto.quantidade > 0)
-    
     produtos = query.all()
-    
     historico = Movimentacao.query.order_by(Movimentacao.data.desc()).limit(30).all()
-    
     valor_total_estoque = sum([p.quantidade * p.valor_pago for p in produtos])
     total_itens_estoque = sum([p.quantidade for p in produtos])
-    
-    top_saidas = db.session.query(Produto.nome, Produto.marca, func.sum(Movimentacao.quantidade).label('total')).join(Movimentacao).filter(
-        Movimentacao.tipo.in_(['Saida_Locacao', 'Venda', 'Ajuste_Saida']),
-        Movimentacao.status != 'Cancelado'
-    ).group_by(Produto.id).order_by(desc('total')).limit(30).all()
-
+    top_saidas = db.session.query(Produto.nome, Produto.marca, func.sum(Movimentacao.quantidade).label('total')).join(Movimentacao).filter(Movimentacao.tipo.in_(['Saida_Locacao', 'Venda', 'Ajuste_Saida']), Movimentacao.status != 'Cancelado').group_by(Produto.id).order_by(desc('total')).limit(30).all()
     marcas = db.session.query(Produto.marca).distinct().all()
     lista_marcas = [m[0] for m in marcas if m[0]]
-    
-    return render_template('estoque.html', produtos=produtos, historico=historico, marcas=lista_marcas, 
-                           valor_total_estoque=valor_total_estoque, total_itens_estoque=total_itens_estoque, top_saidas=top_saidas)
+    return render_template('estoque.html', produtos=produtos, historico=historico, marcas=lista_marcas, valor_total_estoque=valor_total_estoque, total_itens_estoque=total_itens_estoque, top_saidas=top_saidas)
 
 @app.route('/saida_locacao')
 def saida_locacao():
     busca = request.args.get('busca')
     periodo = request.args.get('periodo')
     cliente_id = request.args.get('cliente_id')
-    
     query = PedidoSaida.query
-    
     if busca:
         term = f"%{busca}%"
-        query = query.join(Cliente).filter(
-            (cast(PedidoSaida.numero_pedido, String).like(term)) | 
-            (Cliente.nome.like(term)) |
-            (PedidoSaida.impressora.like(term))
-        )
-    
-    if cliente_id and cliente_id != 'Todos':
-        query = query.filter(PedidoSaida.cliente_id == int(cliente_id))
-        
+        query = query.join(Cliente).filter((cast(PedidoSaida.numero_pedido, String).like(term)) | (Cliente.nome.like(term)) | (PedidoSaida.impressora.like(term)))
+    if cliente_id and cliente_id != 'Todos': query = query.filter(PedidoSaida.cliente_id == int(cliente_id))
     if periodo == 'mes_passado':
         mes_passado = datetime.now().month - 1
         query = query.filter(extract('month', PedidoSaida.data) == mes_passado)
     elif periodo != 'todos': 
         mes_atual = datetime.now().month
         query = query.filter(extract('month', PedidoSaida.data) == mes_atual)
-
     pedidos = query.order_by(PedidoSaida.data.desc()).all()
-    
     produtos = Produto.query.filter(Produto.quantidade > 0).all()
     clientes = Cliente.query.order_by(Cliente.nome).all()
-    
     mes_atual = datetime.now().month
-    top_clientes = db.session.query(
-        Cliente.nome, 
-        func.sum(ItemPedido.quantidade).label('total_itens')
-    ).join(PedidoSaida, Cliente.pedidos).join(ItemPedido).filter(
-        extract('month', PedidoSaida.data) == mes_atual,
-        PedidoSaida.status == 'Ativo'
-    ).group_by(Cliente.id).order_by(desc('total_itens')).limit(30).all()
-
-    return render_template('saida_locacao.html', 
-                           produtos=produtos, 
-                           clientes=clientes, 
-                           pedidos=pedidos,
-                           top_clientes=top_clientes,
-                           hoje=datetime.now())
+    top_clientes = db.session.query(Cliente.nome, func.sum(ItemPedido.quantidade).label('total_itens')).join(PedidoSaida, Cliente.pedidos).join(ItemPedido).filter(extract('month', PedidoSaida.data) == mes_atual, PedidoSaida.status == 'Ativo').group_by(Cliente.id).order_by(desc('total_itens')).limit(30).all()
+    return render_template('saida_locacao.html', produtos=produtos, clientes=clientes, pedidos=pedidos, top_clientes=top_clientes, hoje=datetime.now())
 
 @app.route('/clientes')
 def clientes():
@@ -516,23 +414,21 @@ def vendas():
     canceladas = Venda.query.filter(Venda.status_geral == 'Cancelada').order_by(Venda.data.desc()).all()
     return render_template('vendas.html', vendas=todas_vendas, vencimentos=vencimentos, canceladas=canceladas, clientes=clientes, produtos=produtos, hoje=datetime.now())
 
+# ... [Bloco de rotas CRUD vendas/estoque/pedidos mantido igual] ...
 @app.route('/cancelar_venda', methods=['POST'])
 def cancelar_venda():
     venda_id = request.form.get('venda_id')
     justificativa = request.form.get('justificativa')
     venda = Venda.query.get(venda_id)
     if not venda: return redirect(url_for('vendas'))
-        
     for item in venda.itens:
         produto = Produto.query.get(item.produto_id)
         produto.quantidade += item.quantidade
-    
     movs = Movimentacao.query.filter_by(numero_documento=f"V-{venda.id}").all()
     for m in movs:
         m.status = 'Cancelado'
         m.justificativa_cancelamento = justificativa
         m.observacao = (m.observacao or '') + " [CANCELADO]"
-
     venda.status_geral = 'Cancelada'
     venda.justificativa_cancelamento = justificativa
     registrar_log('Cancelamento Venda', f'Venda #{venda.id} cancelada.')
@@ -545,22 +441,17 @@ def cancelar_pedido_saida():
     pedido_id = request.form.get('pedido_id')
     justificativa = request.form.get('justificativa')
     pedido = PedidoSaida.query.get(pedido_id)
-    if not pedido or pedido.status == 'Cancelado':
-        return redirect(url_for('saida_locacao'))
-    
+    if not pedido or pedido.status == 'Cancelado': return redirect(url_for('saida_locacao'))
     for item in pedido.itens:
         produto = Produto.query.get(item.produto_id)
         produto.quantidade += item.quantidade
-        
     pedido.status = 'Cancelado'
     pedido.justificativa_cancelamento = justificativa
-    
     movs = Movimentacao.query.filter_by(pedido_id=pedido.id).all()
     for m in movs: 
         m.status = 'Cancelado'
         m.justificativa_cancelamento = justificativa
         m.observacao = (m.observacao or '') + f" [CANCELADO: {justificativa}]"
-    
     registrar_log('Cancelamento Pedido', f'Pedido #{pedido.numero_pedido} cancelado.')
     db.session.commit()
     flash('Pedido cancelado e estoque estornado.')
@@ -571,23 +462,17 @@ def cancelar_movimentacao():
     mov_id = request.form.get('movimentacao_id')
     justificativa = request.form.get('justificativa')
     mov = Movimentacao.query.get(mov_id)
-    if not mov or mov.status == 'Cancelado':
-        return redirect(url_for('estoque'))
-
+    if not mov or mov.status == 'Cancelado': return redirect(url_for('estoque'))
     produto = Produto.query.get(mov.produto_id)
-    
     if mov.tipo == 'Entrada':
         if produto.quantidade < mov.quantidade:
             flash(f'Erro: Estoque insuficiente para cancelar entrada.')
             return redirect(url_for('estoque'))
         produto.quantidade -= mov.quantidade
-    else: 
-        produto.quantidade += mov.quantidade
-
+    else: produto.quantidade += mov.quantidade
     mov.status = 'Cancelado'
     mov.justificativa_cancelamento = justificativa
     mov.observacao = (mov.observacao or '') + " [CANCELADO]"
-    
     db.session.commit()
     return redirect(url_for('estoque'))
 
@@ -599,16 +484,13 @@ def nova_venda():
         vencimento_str = request.form.get('data_vencimento')
         data_vencimento = datetime.strptime(vencimento_str, '%Y-%m-%d').date() if vencimento_str else None
         status_boleto = 'Falta Boleto' if forma_pagamento == 'BOLETO' else None
-        
         nova_venda = Venda(cliente_id=cliente_id, forma_pagamento=forma_pagamento, data_vencimento=data_vencimento, status_pagamento='Pendente', status_nf='Falta NF', status_boleto=status_boleto, status_envio='Falta Enviar', status_geral='Ativa', observacao=request.form.get('observacao'))
         db.session.add(nova_venda)
         db.session.commit()
-        
         produtos_ids = request.form.getlist('produtos[]')
         quantidades = request.form.getlist('quantidades[]')
         valores = request.form.getlist('valores[]')
         valor_total_venda = 0
-
         for p_id, qtd, val in zip(produtos_ids, quantidades, valores):
             if not p_id: continue
             qtd = int(qtd)
@@ -625,7 +507,6 @@ def nova_venda():
             mov = Movimentacao(produto_id=produto.id, tipo='Venda', categoria_movimento='Venda', numero_documento=f"V-{nova_venda.id}", quantidade=qtd, destino_origem=nova_venda.cliente.nome, observacao=f"Venda #{nova_venda.id}")
             db.session.add(mov)
             valor_total_venda += valor_item_total
-
         nova_venda.valor_total = valor_total_venda
         registrar_log('Nova Venda', f'Venda #{nova_venda.id} criada.')
         db.session.commit()
@@ -673,22 +554,9 @@ def criar_produto():
     if produto_existente:
         flash('Erro: Produto já existe!')
         return redirect(url_for('estoque'))
-    
     valor_venda = limpar_float(request.form.get('valor_venda'))
     ativo = True if request.form.get('ativo') else False
-    
-    novo = Produto(
-        nome=nome_produto, 
-        categoria=request.form['categoria'], 
-        marca=request.form['marca'], 
-        compatibilidade=request.form['compatibilidade'], 
-        quantidade=0, 
-        minimo=int(request.form['minimo'] or 5), 
-        valor_pago=0.0, 
-        valor_venda=valor_venda, 
-        observacao=request.form['observacao'],
-        ativo=ativo
-    )
+    novo = Produto(nome=nome_produto, categoria=request.form['categoria'], marca=request.form['marca'], compatibilidade=request.form['compatibilidade'], quantidade=0, minimo=int(request.form['minimo'] or 5), valor_pago=0.0, valor_venda=valor_venda, observacao=request.form['observacao'], ativo=ativo)
     db.session.add(novo)
     db.session.commit()
     return redirect(url_for('estoque'))
@@ -706,7 +574,6 @@ def editar_produto():
         produto.valor_venda = limpar_float(request.form['valor_venda'])
         produto.observacao = request.form['observacao']
         produto.ativo = True if request.form.get('ativo') else False
-        
         db.session.commit()
     return redirect(url_for('estoque'))
 
@@ -726,24 +593,15 @@ def ajustar_estoque():
     qtd = int(request.form['quantidade'])
     obs = request.form.get('observacao_ajuste')
     produto = Produto.query.get(produto_id)
-    
     if tipo == 'Entrada':
         custo = limpar_float(request.form.get('valor_pago'))
         if custo <= 0:
             flash('ERRO: Para entrada de estoque, o Valor Unitário é obrigatório e deve ser maior que zero.')
             return redirect(url_for('estoque'))
-            
         total = produto.quantidade * produto.valor_pago + qtd * custo
         produto.quantidade += qtd
         if produto.quantidade > 0: produto.valor_pago = total / produto.quantidade
-        
-        db.session.add(Movimentacao(
-            produto_id=produto.id, tipo='Entrada', categoria_movimento=request.form.get('origem_tipo'), 
-            numero_documento=request.form.get('numero_documento'), quantidade=qtd, 
-            valor_unitario_entrada=custo, 
-            destino_origem=request.form.get('fornecedor'), observacao=obs
-        ))
-        
+        db.session.add(Movimentacao(produto_id=produto.id, tipo='Entrada', categoria_movimento=request.form.get('origem_tipo'), numero_documento=request.form.get('numero_documento'), quantidade=qtd, valor_unitario_entrada=custo, destino_origem=request.form.get('fornecedor'), observacao=obs))
     elif tipo == 'Saida':
         if produto.quantidade >= qtd:
             produto.quantidade -= qtd
@@ -751,7 +609,6 @@ def ajustar_estoque():
         else:
             flash('Erro: Estoque insuficiente.')
             return redirect(url_for('estoque'))
-            
     db.session.commit()
     return redirect(url_for('estoque'))
 
@@ -868,122 +725,60 @@ def impressoras():
     busca = request.args.get('busca')
     status = request.args.get('status')
     cliente_id = request.args.get('cliente_id')
-    
     query = Impressora.query
-    
     if busca:
         term = f"%{busca}%"
-        query = query.filter(
-            (Impressora.marca.like(term)) | 
-            (Impressora.modelo.like(term)) | 
-            (Impressora.serial.like(term)) | 
-            (Impressora.mlt.like(term)) |
-            (Impressora.localizacao.like(term))
-        )
-    
-    if status and status != 'Todas':
-        query = query.filter(Impressora.status == status)
-        
+        query = query.filter((Impressora.marca.like(term)) | (Impressora.modelo.like(term)) | (Impressora.serial.like(term)) | (Impressora.mlt.like(term)) | (Impressora.localizacao.like(term)))
+    if status and status != 'Todas': query = query.filter(Impressora.status == status)
     if cliente_id and cliente_id != 'Todos':
         cliente = Cliente.query.get(int(cliente_id))
-        if cliente:
-            query = query.filter(Impressora.localizacao == cliente.nome)
-        
+        if cliente: query = query.filter(Impressora.localizacao == cliente.nome)
     impressoras = query.order_by(Impressora.modelo).all()
     clientes = Cliente.query.order_by(Cliente.nome).all()
-    
     ultimas_movimentacoes = MovimentacaoImpressora.query.order_by(MovimentacaoImpressora.data.desc()).limit(20).all()
-    
     total_geral = Impressora.query.count()
     disponiveis = Impressora.query.filter_by(status='Disponível').count()
     locadas = Impressora.query.filter_by(status='Locada').count()
     manutencao = Impressora.query.filter_by(status='Manutenção').count()
-    
-    return render_template('impressoras.html', 
-                           impressoras=impressoras,
-                           clientes=clientes,
-                           ultimas_movimentacoes=ultimas_movimentacoes,
-                           total=total_geral,
-                           disponiveis=disponiveis,
-                           locadas=locadas,
-                           manutencao=manutencao,
-                           request=request)
+    return render_template('impressoras.html', impressoras=impressoras, clientes=clientes, ultimas_movimentacoes=ultimas_movimentacoes, total=total_geral, disponiveis=disponiveis, locadas=locadas, manutencao=manutencao, request=request)
 
 @app.route('/api/manutencoes_impressora/<int:id>')
 def api_manutencoes_impressora(id):
     manutencoes = Manutencao.query.filter_by(impressora_id=id).order_by(Manutencao.numero_ordem.desc()).all()
-    
     lista = []
     for m in manutencoes:
-        lista.append({
-            'id': m.id,
-            'numero': m.numero_ordem,
-            'status': m.status_atual,
-            'inicio': m.data_inicio.strftime('%d/%m/%Y'),
-            'motivo': m.motivo_inicial
-        })
-    
+        lista.append({'id': m.id, 'numero': m.numero_ordem, 'status': m.status_atual, 'inicio': m.data_inicio.strftime('%d/%m/%Y'), 'motivo': m.motivo_inicial})
     return jsonify(lista)
 
 @app.route('/movimentar_impressora', methods=['POST'])
 def movimentar_impressora():
     try:
         impressora_id = request.form.get('impressora_id')
-        tipo_movimentacao = request.form.get('tipo_movimentacao') # Locação, Estoque, Manutenção
+        tipo_movimentacao = request.form.get('tipo_movimentacao')
         cliente_id = request.form.get('cliente_id')
         contador_atual = limpar_int(request.form.get('contador_atual'))
         observacao = request.form.get('observacao')
-
         imp = Impressora.query.get_or_404(impressora_id)
         
         # --- LÓGICA DE MANUTENÇÃO (AUTOMATIZAÇÃO DE O.S.) ---
-        
-        # CENÁRIO 1: SAÍDA DE MANUTENÇÃO (Estava em Manutenção -> Foi para Outro lugar)
         if imp.status == 'Manutenção' and tipo_movimentacao != 'Manutenção':
-            os_aberta = Manutencao.query.filter_by(
-                impressora_id=imp.id, 
-                status_atual='Aberta'
-            ).order_by(Manutencao.data_inicio.desc()).first()
-            
+            os_aberta = Manutencao.query.filter_by(impressora_id=imp.id, status_atual='Aberta').order_by(Manutencao.data_inicio.desc()).first()
             if os_aberta:
                 os_aberta.status_atual = 'Fechada'
                 os_aberta.data_fim = datetime.now()
-                
-                log_fechamento = LogManutencao(
-                    manutencao_id=os_aberta.id,
-                    impressora_id=imp.id,
-                    titulo="Encerramento Automático",
-                    observacao=f"Impressora movida para {tipo_movimentacao}. Obs Saída: {observacao}"
-                )
+                log_fechamento = LogManutencao(manutencao_id=os_aberta.id, impressora_id=imp.id, titulo="Encerramento Automático", observacao=f"Impressora movida para {tipo_movimentacao}. Obs: {observacao}")
                 db.session.add(log_fechamento)
 
-        # CENÁRIO 2: ENTRADA EM MANUTENÇÃO (Estava em Outro lugar -> Foi para Manutenção)
         if tipo_movimentacao == 'Manutenção':
             ultima_os = Manutencao.query.order_by(Manutencao.numero_ordem.desc()).first()
             proximo_numero = (ultima_os.numero_ordem + 1) if (ultima_os and ultima_os.numero_ordem) else 1000
-            
-            nova_os = Manutencao(
-                impressora_id=imp.id,
-                numero_ordem=proximo_numero,
-                data_inicio=datetime.now(),
-                status_atual='Aberta',
-                motivo_inicial=observacao or "Manutenção Solicitada via Movimentação"
-            )
+            nova_os = Manutencao(impressora_id=imp.id, numero_ordem=proximo_numero, data_inicio=datetime.now(), status_atual='Aberta', motivo_inicial=observacao or "Manutenção Solicitada")
             db.session.add(nova_os)
             db.session.flush() 
-            
-            log_abertura = LogManutencao(
-                manutencao_id=nova_os.id, 
-                impressora_id=imp.id,
-                titulo="Abertura O.S.", 
-                observacao=f"O.S. #{proximo_numero} aberta automaticamente."
-            )
-            db.session.add(log_abertura)
+            db.session.add(LogManutencao(manutencao_id=nova_os.id, impressora_id=imp.id, titulo="Abertura O.S.", observacao=f"O.S. #{proximo_numero} aberta automaticamente."))
 
-        # Atualiza Status da Impressora
         status_novo = 'Disponível'
         local_novo = 'Estoque'
-        
         if tipo_movimentacao == 'Locação':
             status_novo = 'Locada'
             if cliente_id:
@@ -993,30 +788,17 @@ def movimentar_impressora():
             status_novo = 'Manutenção'
             local_novo = 'Assistência Técnica'
             
-        nova_mov = MovimentacaoImpressora(
-            impressora_id=imp.id,
-            tipo=tipo_movimentacao,
-            data=datetime.now(),
-            origem=imp.localizacao,
-            destino=local_novo,
-            contador_momento=contador_atual,
-            observacao=observacao
-        )
-
+        nova_mov = MovimentacaoImpressora(impressora_id=imp.id, tipo=tipo_movimentacao, data=datetime.now(), origem=imp.localizacao, destino=local_novo, contador_momento=contador_atual, observacao=observacao)
         imp.status = status_novo
         imp.localizacao = local_novo
         imp.contador = contador_atual
-
         db.session.add(nova_mov)
         db.session.commit()
-
         flash(f'Movimentação realizada: {imp.modelo} foi para {local_novo}.', 'success')
-        
     except Exception as e:
         db.session.rollback()
         print(f"ERRO MOVIMENTACAO: {e}")
         flash(f'Erro ao movimentar: {e}', 'danger')
-
     return redirect(url_for('impressoras'))
 
 @app.route('/adicionar_log_manutencao', methods=['POST'])
@@ -1028,54 +810,30 @@ def adicionar_log_manutencao():
         obs = request.form.get('observacao')
         
         if (not manutencao_id or manutencao_id == "") and impressora_id:
-            os_aberta = Manutencao.query.filter_by(
-                impressora_id=int(impressora_id),
-                status_atual='Aberta'
-            ).order_by(Manutencao.data_inicio.desc()).first()
-            
-            if os_aberta:
-                manutencao_id = os_aberta.id
+            os_aberta = Manutencao.query.filter_by(impressora_id=int(impressora_id), status_atual='Aberta').order_by(Manutencao.data_inicio.desc()).first()
+            if os_aberta: manutencao_id = os_aberta.id
         
         if manutencao_id:
-            log = LogManutencao(
-                manutencao_id=int(manutencao_id),
-                impressora_id=int(impressora_id) if impressora_id else None,
-                titulo=titulo,
-                observacao=obs
-            )
+            log = LogManutencao(manutencao_id=int(manutencao_id), impressora_id=int(impressora_id) if impressora_id else None, titulo=titulo, observacao=obs)
             db.session.add(log)
             db.session.commit()
             flash('Histórico atualizado na O.S. com sucesso.', 'success')
-        else:
-            flash('Erro: Nenhuma O.S. Aberta encontrada para esta impressora.', 'warning')
-            
+        else: flash('Erro: Nenhuma O.S. Aberta encontrada.', 'warning')
     except Exception as e:
         db.session.rollback()
         flash(f'Erro: {e}', 'danger')
-        
     return redirect(url_for('impressoras'))
 
 @app.route('/api/impressoras_cliente/<int:cliente_id>')
 def api_impressoras_cliente(cliente_id):
     cliente = Cliente.query.get(cliente_id)
-    if not cliente:
-        return jsonify([])
-    
+    if not cliente: return jsonify([])
     impressoras = Impressora.query.filter_by(status='Locada', localizacao=cliente.nome).all()
-    
     lista = []
     for imp in impressoras:
         mlt_texto = imp.mlt if imp.mlt else "S/M"
         display = f"{imp.modelo} | S/N: {imp.serial} | MLT: {mlt_texto}"
-        
-        lista.append({
-            'id': imp.id,
-            'modelo': imp.modelo,
-            'serial': imp.serial,
-            'mlt': imp.mlt,
-            'texto_display': display
-        })
-        
+        lista.append({'id': imp.id, 'modelo': imp.modelo, 'serial': imp.serial, 'mlt': imp.mlt, 'texto_display': display})
     return jsonify(lista)
 
 @app.route('/fornecedores')
@@ -1086,6 +844,7 @@ def fornecedores():
     pedidos_lista = PedidoCompra.query.order_by(PedidoCompra.data_emissao.desc()).all()
     return render_template('fornecedores.html', fornecedores=fornecedores_lista, produtos=produtos_lista, pedidos=pedidos_lista, hoje=datetime.now(), active_tab=active_tab)
 
+# ... [Bloco de rotas CRUD fornecedores e compras mantido igual] ...
 @app.route('/criar_fornecedor', methods=['POST'])
 def criar_fornecedor():
     try:
@@ -1093,34 +852,23 @@ def criar_fornecedor():
         db.session.add(novo)
         db.session.commit()
         flash('Fornecedor cadastrado.')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro: {e}')
+    except Exception as e: db.session.rollback(); flash(f'Erro: {e}')
     return redirect(url_for('fornecedores'))
 
 @app.route('/editar_fornecedor', methods=['POST'])
 def editar_fornecedor():
     try:
-        f_id = request.form['fornecedor_id']
-        f = Fornecedor.query.get(f_id)
+        f = Fornecedor.query.get(request.form['fornecedor_id'])
         if f:
-            f.nome = request.form['nome']
-            f.email = request.form['email']
-            f.telefone = request.form['telefone']
-            f.observacao = request.form['observacao']
-            db.session.commit()
-            flash('Fornecedor atualizado.')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro: {e}')
+            f.nome = request.form['nome']; f.email = request.form['email']; f.telefone = request.form['telefone']; f.observacao = request.form['observacao']
+            db.session.commit(); flash('Fornecedor atualizado.')
+    except Exception as e: db.session.rollback(); flash(f'Erro: {e}')
     return redirect(url_for('fornecedores'))
 
 @app.route('/excluir_fornecedor/<int:id>')
 def excluir_fornecedor(id):
     f = Fornecedor.query.get(id)
-    if f:
-        db.session.delete(f)
-        db.session.commit()
+    if f: db.session.delete(f); db.session.commit()
     return redirect(url_for('fornecedores'))
 
 @app.route('/criar_pedido_compra', methods=['POST'])
@@ -1129,21 +877,17 @@ def criar_pedido_compra():
         data_emissao = datetime.strptime(request.form['data_emissao'], '%Y-%m-%d')
         data_entrega = datetime.strptime(request.form['data_entrega'], '%Y-%m-%d') if request.form['data_entrega'] else None
         valor = limpar_float(request.form['valor_total'])
-        novo = PedidoCompra(fornecedor_id=int(request.form['fornecedor_id']), descricao_itens=request.form['descricao_itens'], valor_total=valor, prazo_pagamento=request.form['prazo_pagamento'], data_emissao=data_emissao, data_entrega_prevista=data_entrega, entregue=False)
+        novo = PedidoCompra(fornecedor_id=int(request.form['fornecedor_id']), valor_total=valor, prazo_pagamento=request.form['prazo_pagamento'], data_emissao=data_emissao, data_entrega_prevista=data_entrega)
         db.session.add(novo)
         db.session.commit()
         flash('Pedido de compra registrado.')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro: {e}')
+    except Exception as e: db.session.rollback(); flash(f'Erro: {e}')
     return redirect(url_for('fornecedores'))
 
 @app.route('/toggle_pedido_entregue/<int:id>')
 def toggle_pedido_entregue(id):
     pedido = PedidoCompra.query.get(id)
-    if pedido:
-        pedido.entregue = not pedido.entregue
-        db.session.commit()
+    if pedido: pedido.status = 'Entregue' if pedido.status != 'Entregue' else 'Pendente'; db.session.commit()
     return redirect(url_for('fornecedores'))
 
 @app.route('/salvar_pedido_compra', methods=['POST'])
@@ -1156,7 +900,6 @@ def salvar_pedido_compra():
         data_entrega = datetime.strptime(request.form['data_entrega'], '%Y-%m-%d') if request.form['data_entrega'] else None
         frete = float(request.form['frete'] or 0)
         obs = request.form['observacao']
-        
         prod_ids = request.form.getlist('item_produto_id')
         descs = request.form.getlist('item_desc')
         qtds = request.form.getlist('item_qtd')
@@ -1164,8 +907,7 @@ def salvar_pedido_compra():
         
         if pedido_id:
             pedido = PedidoCompra.query.get(pedido_id)
-            for item in pedido.itens:
-                db.session.delete(item)
+            for item in pedido.itens: db.session.delete(item)
         else:
             pedido = PedidoCompra()
             db.session.add(pedido)
@@ -1177,7 +919,6 @@ def salvar_pedido_compra():
         pedido.frete = frete
         pedido.observacao = obs
         if not pedido.status: pedido.status = 'Pendente'
-        
         db.session.flush()
         
         total_itens = 0
@@ -1189,34 +930,23 @@ def salvar_pedido_compra():
             p_id = prod_ids[i] if prod_ids[i] else None
             novo_item = ItemPedidoCompra(pedido_id=pedido.id, produto_id=p_id, descricao=descs[i], quantidade=qtd, valor_unitario=unit, valor_total=total_linha)
             db.session.add(novo_item)
-            
         pedido.valor_itens = total_itens
         pedido.valor_total = total_itens + frete
-        
         db.session.commit()
         flash('Pedido salvo com sucesso.')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao salvar pedido: {e}')
-        print(e)
+    except Exception as e: db.session.rollback(); flash(f'Erro ao salvar pedido: {e}')
     return redirect(url_for('fornecedores', tab='pedidos'))
 
 @app.route('/cancelar_pedido_compra/<int:id>')
 def cancelar_pedido_compra(id):
     pedido = PedidoCompra.query.get(id)
-    if pedido:
-        pedido.status = 'Cancelado'
-        db.session.commit()
-        flash('Pedido cancelado.')
+    if pedido: pedido.status = 'Cancelado'; db.session.commit(); flash('Pedido cancelado.')
     return redirect(url_for('fornecedores', tab='pedidos'))
 
 @app.route('/entregar_pedido_compra/<int:id>')
 def entregar_pedido_compra(id):
     pedido = PedidoCompra.query.get(id)
-    if pedido:
-        pedido.status = 'Entregue'
-        db.session.commit()
-        flash('Pedido marcado como Entregue.')
+    if pedido: pedido.status = 'Entregue'; db.session.commit(); flash('Pedido marcado como Entregue.')
     return redirect(url_for('fornecedores', tab='pedidos'))
 
 @app.route('/api/pedido_compra/<int:id>')
@@ -1224,13 +954,7 @@ def api_pedido_compra(id):
     p = PedidoCompra.query.get(id)
     itens = []
     for i in p.itens:
-        itens.append({
-            'produto_id': i.produto_id or '',
-            'descricao': i.descricao,
-            'quantidade': i.quantidade,
-            'valor_unitario': i.valor_unitario,
-            'valor_total': i.valor_total
-        })
+        itens.append({'produto_id': i.produto_id or '', 'descricao': i.descricao, 'quantidade': i.quantidade, 'valor_unitario': i.valor_unitario, 'valor_total': i.valor_total})
     data = {'id': p.id, 'fornecedor_id': p.fornecedor_id, 'fornecedor_nome': p.fornecedor.nome, 'data_emissao': p.data_emissao.strftime('%Y-%m-%d'), 'data_entrega': p.data_entrega_prevista.strftime('%Y-%m-%d') if p.data_entrega_prevista else '', 'prazo': p.prazo_pagamento, 'frete': p.frete, 'valor_itens': p.valor_itens, 'valor_total': p.valor_total, 'observacao': p.observacao, 'status': p.status, 'itens': itens}
     return jsonify(data)
 
@@ -1248,9 +972,7 @@ def editar_movimentacao_historico():
             mov.observacao = request.form['observacao']
             db.session.commit()
             flash('Histórico atualizado.')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao editar: {e}')
+    except Exception as e: db.session.rollback(); flash(f'Erro ao editar: {e}')
     return redirect(url_for('impressoras'))
 
 @app.route('/api/historico_impressora/<int:id>')
@@ -1261,133 +983,63 @@ def api_historico_impressora(id):
     for m in movs:
         lista_unificada.append({'categoria': 'movimentacao', 'data_obj': m.data, 'data': m.data.strftime('%d/%m/%Y %H:%M'), 'tipo': m.tipo, 'origem': m.origem, 'destino': m.destino, 'contador': m.contador_momento, 'observacao': m.observacao})
     for l in logs:
-        lista_unificada.append({'categoria': 'manutencao', 'data_obj': l.data, 'data': l.data.strftime('%d/%m/%Y %H:%M'), 'titulo': l.status_detalhe, 'observacao': l.observacao})
+        lista_unificada.append({'categoria': 'manutencao', 'data_obj': l.data, 'data': l.data.strftime('%d/%m/%Y %H:%M'), 'titulo': l.titulo, 'observacao': l.observacao})
     lista_unificada.sort(key=lambda x: x['data_obj'], reverse=True)
     return jsonify(lista_unificada)
 
 @app.route('/criar_impressora', methods=['POST'])
 def criar_impressora():
     try:
-        nova = Impressora(
-            marca=request.form['marca'], 
-            modelo=request.form['modelo'],
-            serial=request.form['serial'],
-            mlt=request.form['mlt'],
-            contador=int(request.form['contador'] or 0),
-            status='Disponível', 
-            localizacao='Estoque',
-            observacao=request.form['observacao']
-        )
+        nova = Impressora(marca=request.form['marca'], modelo=request.form['modelo'], serial=request.form['serial'], mlt=request.form['mlt'], contador=int(request.form['contador'] or 0), status='Disponível', localizacao='Estoque', observacao=request.form['observacao'])
         db.session.add(nova)
         db.session.flush() 
-        db.session.add(MovimentacaoImpressora(impressora_id=nova.id, tipo='Cadastro', origem='-', destino='Estoque', contador_momento=nova.contador, observacao='Cadastro inicial no sistema'))
+        db.session.add(MovimentacaoImpressora(impressora_id=nova.id, tipo='Cadastro', origem='-', destino='Estoque', contador_momento=nova.contador, observacao='Cadastro inicial'))
         db.session.commit()
-        flash('Impressora cadastrada com sucesso.')
-    except IntegrityError:
-        db.session.rollback()
-        flash('ERRO: Já existe uma impressora cadastrada com este Número de Série!')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao cadastrar: {str(e)}')
+        flash('Impressora cadastrada.')
+    except IntegrityError: db.session.rollback(); flash('ERRO: Serial já existe!')
+    except Exception as e: db.session.rollback(); flash(f'Erro: {str(e)}')
     return redirect(url_for('impressoras'))
 
 @app.route('/editar_impressora', methods=['POST'])
 def editar_impressora():
     try:
-        imp_id = request.form.get('impressora_id')
-        imp = Impressora.query.get(imp_id)
+        imp = Impressora.query.get(request.form.get('impressora_id'))
         if imp:
-            imp.marca = request.form['marca']
-            imp.modelo = request.form['modelo']
-            imp.serial = request.form['serial']
-            imp.mlt = request.form['mlt']
-            imp.observacao = request.form['observacao']
-            db.session.commit()
-            flash('Informações atualizadas.')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao editar: {e}')
+            imp.marca = request.form['marca']; imp.modelo = request.form['modelo']; imp.serial = request.form['serial']; imp.mlt = request.form['mlt']; imp.observacao = request.form['observacao']
+            db.session.commit(); flash('Informações atualizadas.')
+    except Exception as e: db.session.rollback(); flash(f'Erro: {e}')
     return redirect(url_for('impressoras'))
 
 @app.route('/excluir_impressora/<int:id>')
 def excluir_impressora(id):
     imp = Impressora.query.get(id)
-    if imp:
-        db.session.delete(imp)
-        db.session.commit()
+    if imp: db.session.delete(imp); db.session.commit()
     return redirect(url_for('impressoras'))
 
 @app.route('/api/historico_completo/<int:id>')
 def api_historico_completo(id):
     try:
         impressora = Impressora.query.get_or_404(id)
-        
         movs = MovimentacaoImpressora.query.filter_by(impressora_id=id).order_by(MovimentacaoImpressora.data.desc()).all()
         manutencoes = Manutencao.query.filter_by(impressora_id=id).order_by(Manutencao.numero_ordem.desc()).all()
-        
         insumos_lista = []
         if impressora.serial:
-            pedidos_vinculados = PedidoSaida.query.filter(
-                PedidoSaida.impressora.ilike(f'%{impressora.serial}%'),
-                PedidoSaida.status != 'Cancelado'
-            ).all()
-            
+            pedidos_vinculados = PedidoSaida.query.filter(PedidoSaida.impressora.ilike(f'%{impressora.serial}%'), PedidoSaida.status != 'Cancelado').all()
             ids_pedidos = [p.id for p in pedidos_vinculados]
-            
             if ids_pedidos:
-                movs_insumos = Movimentacao.query.filter(
-                    Movimentacao.pedido_id.in_(ids_pedidos),
-                    Movimentacao.tipo == 'Saida_Locacao',
-                    Movimentacao.status != 'Cancelado'
-                ).order_by(Movimentacao.data.desc()).all()
-                
+                movs_insumos = Movimentacao.query.filter(Movimentacao.pedido_id.in_(ids_pedidos), Movimentacao.tipo == 'Saida_Locacao', Movimentacao.status != 'Cancelado').order_by(Movimentacao.data.desc()).all()
                 for m in movs_insumos:
-                    insumos_lista.append({
-                        'data': m.data.strftime('%d/%m/%Y %H:%M'),
-                        'produto': m.produto.nome,
-                        'marca': m.produto.marca,
-                        'qtd': m.quantidade,
-                        'pedido': m.numero_documento
-                    })
-
+                    insumos_lista.append({'data': m.data.strftime('%d/%m/%Y %H:%M'), 'produto': m.produto.nome, 'marca': m.produto.marca, 'qtd': m.quantidade, 'pedido': m.numero_documento})
         lista_movs = []
         for m in movs:
-            lista_movs.append({
-                'data': m.data.strftime('%d/%m/%Y %H:%M') if m.data else '-',
-                'tipo': m.tipo or '-',
-                'origem': m.origem or '-',
-                'destino': m.destino or '-',
-                'contador': m.contador_momento or 0,
-                'obs': m.observacao or ''
-            })
-
+            lista_movs.append({'data': m.data.strftime('%d/%m/%Y %H:%M'), 'tipo': m.tipo, 'origem': m.origem, 'destino': m.destino, 'contador': m.contador_momento, 'obs': m.observacao})
         lista_manut = []
         for m in manutencoes:
             logs = []
-            for l in m.logs:
-                logs.append({
-                    'data': l.data.strftime('%d/%m %H:%M') if l.data else '-',
-                    'titulo': l.titulo or 'Atualização',
-                    'obs': l.observacao or ''
-                })
-            
-            lista_manut.append({
-                'numero': m.numero_ordem,
-                'inicio': m.data_inicio.strftime('%d/%m/%Y') if m.data_inicio else '-',
-                'fim': m.data_fim.strftime('%d/%m/%Y') if m.data_fim else 'Em andamento',
-                'status': m.status_atual,
-                'motivo': m.motivo_inicial or '',
-                'logs': logs
-            })
-            
-        return jsonify({
-            'movimentacoes': lista_movs, 
-            'manutencoes': lista_manut,
-            'insumos': insumos_lista
-        })
-    except Exception as e:
-        print(f"ERRO API HISTORICO: {e}")
-        return jsonify({'movimentacoes': [], 'manutencoes': [], 'insumos': []}), 500
+            for l in m.logs: logs.append({'data': l.data.strftime('%d/%m %H:%M'), 'titulo': l.titulo, 'obs': l.observacao})
+            lista_manut.append({'numero': m.numero_ordem, 'inicio': m.data_inicio.strftime('%d/%m/%Y'), 'fim': m.data_fim.strftime('%d/%m/%Y') if m.data_fim else 'Em andamento', 'status': m.status_atual, 'motivo': m.motivo_inicial, 'logs': logs})
+        return jsonify({'movimentacoes': lista_movs, 'manutencoes': lista_manut, 'insumos': insumos_lista})
+    except Exception as e: return jsonify({'movimentacoes': [], 'manutencoes': [], 'insumos': []}), 500
 
 @app.route('/logs')
 def logs():
@@ -1409,175 +1061,88 @@ def configuracoes(): return render_template('configuracoes.html')
 
 @app.route('/contratos')
 def contratos():
-    impressoras_todas = Impressora.query.filter(
-        or_(
-            Impressora.status == 'Disponível',
-            Impressora.status == 'Locada'
-        )
-    ).order_by(Impressora.localizacao, Impressora.modelo).all()
-
+    impressoras_todas = Impressora.query.filter(or_(Impressora.status == 'Disponível', Impressora.status == 'Locada')).order_by(Impressora.localizacao, Impressora.modelo).all()
     contratos_ativos = Contrato.query.filter_by(status='Ativo').order_by(Contrato.valor_mensal_total.desc()).all()
     contratos_cancelados = Contrato.query.filter_by(status='Cancelado').order_by(Contrato.data_fim.desc()).all()
-    
     clientes = Cliente.query.order_by(Cliente.nome).all()
-
     total_ativos = len(contratos_ativos)
     valor_total_mensal = sum(c.valor_mensal_total for c in contratos_ativos)
     impressoras_locadas = Impressora.query.filter_by(status='Locada').count()
-    
-    return render_template('contratos.html', 
-                           contratos_ativos=contratos_ativos,
-                           contratos_cancelados=contratos_cancelados,
-                           clientes=clientes,
-                           impressoras_todas=impressoras_todas,
-                           total_ativos=total_ativos,
-                           valor_total_mensal=valor_total_mensal,
-                           impressoras_locadas=impressoras_locadas,
-                           hoje=datetime.now().date())
-
-# --- SUBSTITUIR NO app.py ---
+    return render_template('contratos.html', contratos_ativos=contratos_ativos, contratos_cancelados=contratos_cancelados, clientes=clientes, impressoras_todas=impressoras_todas, total_ativos=total_ativos, valor_total_mensal=valor_total_mensal, impressoras_locadas=impressoras_locadas, hoje=datetime.now().date())
 
 @app.route('/criar_contrato', methods=['POST'])
 def criar_contrato():
     try:
-        # 1. Dados Básicos
         cliente_id = request.form.get('cliente_id')
         if not cliente_id:
             flash('Erro: Selecione um cliente.', 'danger')
             return redirect(url_for('contratos'))
-
         cliente_obj = Cliente.query.get(int(cliente_id))
-        
-        # Upload
         nome_arquivo = None
         file = request.files.get('arquivo_contrato')
         if file and file.filename != '':
-            from werkzeug.utils import secure_filename
             timestamp = datetime.now().strftime('%Y%m%d%H%M')
             filename = secure_filename(f"contrato_cli{cliente_id}_{timestamp}.pdf")
-            caminho_pasta = os.path.join(app.root_path, 'static', 'uploads', 'contratos')
-            os.makedirs(caminho_pasta, exist_ok=True)
-            file.save(os.path.join(caminho_pasta, filename))
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             nome_arquivo = filename
-
-        # Criar Contrato
-        novo_contrato = Contrato(
-            cliente_id=int(cliente_id),
-            numero_contrato=request.form.get('numero_contrato'),
-            dia_vencimento=limpar_int(request.form.get('dia_vencimento')),
-            data_inicio=datetime.strptime(request.form.get('data_inicio'), '%Y-%m-%d').date(),
-            data_fim=datetime.strptime(request.form.get('data_fim'), '%Y-%m-%d').date(),
-            status='Ativo',
-            arquivo_pdf=nome_arquivo,
-            valor_mensal_total=0.0
-        )
-        
+        novo_contrato = Contrato(cliente_id=int(cliente_id), numero_contrato=request.form.get('numero_contrato'), dia_vencimento=limpar_int(request.form.get('dia_vencimento')), data_inicio=datetime.strptime(request.form.get('data_inicio'), '%Y-%m-%d').date(), data_fim=datetime.strptime(request.form.get('data_fim'), '%Y-%m-%d').date(), status='Ativo', arquivo_pdf=nome_arquivo, valor_mensal_total=0.0)
         db.session.add(novo_contrato)
         db.session.flush()
-
-        # 2. Custos
+        
         nomes = request.form.getlist('custo_nome[]')
         tipos = request.form.getlist('custo_tipo[]')
         pgs = request.form.getlist('custo_paginas[]')
         vals = request.form.getlist('custo_valor[]')
         excs = request.form.getlist('custo_excedente[]')
-        
         mapa_custos = {} 
-
         if nomes:
             for i in range(len(nomes)):
                 val_franquia = limpar_float(vals[i])
-                nova_franquia = ContratoFranquia(
-                    contrato_id=novo_contrato.id,
-                    nome=nomes[i],
-                    tipo=tipos[i],
-                    franquia_paginas=limpar_int(pgs[i]),
-                    valor_franquia=val_franquia,
-                    valor_excedente=limpar_float(excs[i])
-                )
+                nova_franquia = ContratoFranquia(contrato_id=novo_contrato.id, nome=nomes[i], tipo=tipos[i], franquia_paginas=limpar_int(pgs[i]), valor_franquia=val_franquia, valor_excedente=limpar_float(excs[i]))
                 db.session.add(nova_franquia)
                 db.session.flush()
-                mapa_custos[nomes[i]] = {
-                    'id': nova_franquia.id,
-                    'tipo': tipos[i],
-                    'valor_base': val_franquia
-                }
-
-        # 3. Contagem para Rateio
+                mapa_custos[nomes[i]] = {'id': nova_franquia.id, 'tipo': tipos[i], 'valor_base': val_franquia}
+        
         imps = request.form.getlist('impressora_id[]')
         custos_vinc = request.form.getlist('custo_vinculado[]')
-        
+        vals_loc_manuais = request.form.getlist('valor_locacao[]')
         contagem_por_custo = {}
         for nome_vinculo in custos_vinc:
-            if nome_vinculo and nome_vinculo in mapa_custos:
-                contagem_por_custo[nome_vinculo] = contagem_por_custo.get(nome_vinculo, 0) + 1
-
-        # 4. Impressoras
-        vals_loc_manuais = request.form.getlist('valor_locacao[]')
+            if nome_vinculo and nome_vinculo in mapa_custos: contagem_por_custo[nome_vinculo] = contagem_por_custo.get(nome_vinculo, 0) + 1
+        
         total_acumulado = 0.0
-
         if imps:
             for i in range(len(imps)):
                 if not imps[i]: continue
-                
                 imp_id = int(imps[i])
                 nome_vinc = custos_vinc[i]
-                
                 valor_final_item = 0.0
                 franquia_db_id = None
-                
                 if nome_vinc and nome_vinc in mapa_custos:
                     dados_custo = mapa_custos[nome_vinc]
                     franquia_db_id = dados_custo['id']
-                    if dados_custo['tipo'] == 'Compartilhada':
-                        qtd = contagem_por_custo.get(nome_vinc, 1)
-                        valor_final_item = dados_custo['valor_base'] / qtd
-                    else:
-                        valor_final_item = dados_custo['valor_base']
-                else:
-                    valor_final_item = limpar_float(vals_loc_manuais[i])
-
+                    if dados_custo['tipo'] == 'Compartilhada': qtd = contagem_por_custo.get(nome_vinc, 1); valor_final_item = dados_custo['valor_base'] / qtd
+                    else: valor_final_item = dados_custo['valor_base']
+                else: valor_final_item = limpar_float(vals_loc_manuais[i])
                 total_acumulado += valor_final_item
-
-                novo_item = ContratoItem(
-                    contrato_id=novo_contrato.id,
-                    impressora_id=imp_id,
-                    franquia_id=franquia_db_id,
-                    valor_locacao_unitario=valor_final_item
-                )
-                
-                # Atualizar Impressora
+                novo_item = ContratoItem(contrato_id=novo_contrato.id, impressora_id=imp_id, franquia_id=franquia_db_id, valor_locacao_unitario=valor_final_item)
                 imp = Impressora.query.get(imp_id)
                 if imp:
                     imp.status = 'Locada'
                     imp.localizacao = cliente_obj.nome 
-                    db.session.add(MovimentacaoImpressora(
-                        impressora_id=imp.id, tipo='Locação', origem='Estoque', 
-                        destino=cliente_obj.nome, contador_momento=imp.contador, 
-                        observacao=f"Novo Contrato {novo_contrato.numero_contrato}"
-                    ))
-
-                    # --- LOG COM MLT ---
+                    db.session.add(MovimentacaoImpressora(impressora_id=imp.id, tipo='Locação', origem='Estoque', destino=cliente_obj.nome, contador_momento=imp.contador, observacao=f"Novo Contrato {novo_contrato.numero_contrato}"))
                     mlt_texto = f"MLT: {imp.mlt}" if imp.mlt else "S/M"
-                    msg = f"Inclusão de {imp.modelo} ({mlt_texto} | S/N: {imp.serial})"
-                    registrar_hist_contrato(novo_contrato.id, "Inclusão Item", msg)
-                
+                    registrar_hist_contrato(novo_contrato.id, "Inclusão Item", f"Inclusão de {imp.modelo} ({mlt_texto} | S/N: {imp.serial})")
                 db.session.add(novo_item)
-
+        
         novo_contrato.valor_mensal_total = total_acumulado
-        
-        # Log Criação
         registrar_hist_contrato(novo_contrato.id, "Criação", f"Contrato iniciado. Valor total: {currency_filter(total_acumulado)}")
-        
         db.session.commit()
-        flash(f'Contrato criado! Valor Mensal: {currency_filter(total_acumulado)}', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"ERRO CRIAR: {e}")
-        flash(f'Erro: {str(e)}', 'danger')
-
+        flash(f'Contrato criado! Total: {currency_filter(total_acumulado)}', 'success')
+    except Exception as e: db.session.rollback(); print(f"ERRO CRIAR: {e}"); flash(f'Erro: {str(e)}', 'danger')
     return redirect(url_for('contratos'))
+
+# --- SUBSTITUIR A ROTA editar_contrato NO app.py ---
 
 @app.route('/editar_contrato', methods=['POST'])
 def editar_contrato():
@@ -1586,37 +1151,66 @@ def editar_contrato():
         contrato = Contrato.query.get(c_id)
         if not contrato: return redirect(url_for('contratos'))
 
-        # 1. SNAPSHOT ANTERIOR (Com MLT)
+        # --- 1. PREPARAÇÃO E COMPARAÇÃO (ANTES DE APAGAR) ---
         valor_antigo = contrato.valor_mensal_total
-        itens_antigos = {} 
-        for item in contrato.itens:
-            if item.impressora:
-                mlt_old = f"MLT: {item.impressora.mlt}" if item.impressora.mlt else "S/M"
-                itens_antigos[item.impressora.id] = f"{item.impressora.modelo} ({mlt_old} | S/N: {item.impressora.serial})"
+        cliente_antigo_nome = contrato.cliente.nome
+        
+        # Mapeia quem estava no contrato antes: {id_impressora: ObjetoImpressora}
+        imps_antes = {item.impressora.id: item.impressora for item in contrato.itens if item.impressora}
+        ids_antes = set(imps_antes.keys())
 
-        # 2. Dados Básicos
+        # Pega quem vai ficar no contrato agora
+        imp_ids_form = request.form.getlist('impressora_id[]')
+        ids_agora = set([int(x) for x in imp_ids_form if x])
+
+        # Calcula as diferenças
+        ids_remover = ids_antes - ids_agora  # Estavam e não estão mais (Devolver p/ Estoque)
+        ids_adicionar = ids_agora - ids_antes # Não estavam e agora estão (Sair do Estoque p/ Cliente)
+        ids_manter = ids_antes & ids_agora    # Continuam (Verificar se mudou cliente)
+
+        # --- 2. ATUALIZAÇÃO DADOS BÁSICOS ---
         contrato.numero_contrato = request.form.get('numero_contrato')
         contrato.dia_vencimento = limpar_int(request.form.get('dia_vencimento'))
         contrato.data_inicio = datetime.strptime(request.form['data_inicio'], '%Y-%m-%d').date()
         contrato.data_fim = datetime.strptime(request.form['data_fim'], '%Y-%m-%d').date()
         
         novo_cliente_id = int(request.form.get('cliente_id'))
-        if contrato.cliente_id != novo_cliente_id:
+        cliente_mudou = (contrato.cliente_id != novo_cliente_id)
+        
+        if cliente_mudou:
             contrato.cliente_id = novo_cliente_id
             
-        cliente_atual = Cliente.query.get(contrato.cliente_id)
+        cliente_atual = Cliente.query.get(contrato.cliente_id) # Pega objeto atualizado
 
-        # 3. Limpeza
-        for item in contrato.itens:
-            if item.impressora:
-                item.impressora.status = 'Disponível'
-                item.impressora.localizacao = 'Estoque'
-        
+        # --- 3. PROCESSAR REMOÇÕES (Volta para Estoque) ---
+        for imp_id in ids_remover:
+            imp = imps_antes[imp_id]
+            
+            # Atualiza Status da Impressora
+            imp.status = 'Disponível'
+            imp.localizacao = 'Estoque'
+            
+            # LOG NA IMPRESSORA (MOVIMENTAÇÃO)
+            db.session.add(MovimentacaoImpressora(
+                impressora_id=imp.id,
+                tipo='Estoque', # Tipo "Estoque" significa retorno
+                origem=cliente_antigo_nome,
+                destino='Estoque',
+                contador_momento=imp.contador,
+                observacao=f"Removida do Contrato {contrato.numero_contrato}"
+            ))
+            
+            # Log no Contrato
+            registrar_hist_contrato(contrato.id, "Remoção Item", f"Impressora {imp.modelo} (S/N: {imp.serial}) devolvida ao estoque.")
+
+        # --- 4. LIMPEZA DOS ITENS DO CONTRATO (DB) ---
+        # Removemos todos os vínculos da tabela 'contrato_item' para recriar limpo
+        # (Mas os objetos Impressora já foram tratados acima ou serão abaixo)
         ContratoItem.query.filter_by(contrato_id=contrato.id).delete()
         ContratoFranquia.query.filter_by(contrato_id=contrato.id).delete()
         db.session.flush()
 
-        # 4. Custos
+        # --- 5. RECRIAÇÃO: CUSTOS ---
         nomes = request.form.getlist('custo_nome[]')
         tipos = request.form.getlist('custo_tipo[]')
         pgs = request.form.getlist('custo_paginas[]')
@@ -1643,26 +1237,25 @@ def editar_contrato():
                     'valor_base': val_franquia
                 }
 
-        # 5. Impressoras
-        imp_ids = request.form.getlist('impressora_id[]')
+        # --- 6. RECRIAÇÃO: IMPRESSORAS (E MOVIMENTAÇÃO DE ENTRADA) ---
         custos_vinc = request.form.getlist('custo_vinculado[]')
-        vals_loc_manuais = request.form.getlist('valor_locacao[]')
+        vals_loc = request.form.getlist('valor_locacao[]')
         
+        # Contagem para Rateio
         contagem_por_custo = {}
         for nome_vinculo in custos_vinc:
             if nome_vinculo and nome_vinculo in mapa_custos:
                 contagem_por_custo[nome_vinculo] = contagem_por_custo.get(nome_vinculo, 0) + 1
 
         total_acumulado = 0.0
-        itens_novos_ids = []
 
-        if imp_ids:
-            for i, imp_id_str in enumerate(imp_ids):
+        if imp_ids_form:
+            for i, imp_id_str in enumerate(imp_ids_form):
                 if not imp_id_str: continue
                 imp_id = int(imp_id_str)
-                itens_novos_ids.append(imp_id)
                 nome_vinc = custos_vinc[i]
                 
+                # Calculo Valor
                 valor_final_item = 0.0
                 franquia_db_id = None
                 
@@ -1675,10 +1268,11 @@ def editar_contrato():
                     else:
                         valor_final_item = dados_custo['valor_base']
                 else:
-                    valor_final_item = limpar_float(vals_loc_manuais[i])
+                    valor_final_item = limpar_float(vals_loc[i])
                 
                 total_acumulado += valor_final_item
 
+                # Cria Vínculo Contrato
                 item = ContratoItem(
                     contrato_id=contrato.id,
                     impressora_id=imp_id,
@@ -1687,29 +1281,45 @@ def editar_contrato():
                 )
                 db.session.add(item)
                 
+                # --- TRATAMENTO DA IMPRESSORA (MOVIMENTAÇÃO) ---
                 imp = Impressora.query.get(imp_id)
                 if imp:
-                    imp.status = 'Locada'
-                    imp.localizacao = cliente_atual.nome
-        
+                    # Se for NOVA neste contrato (estava no estoque ou outro lugar)
+                    if imp_id in ids_adicionar:
+                        imp.status = 'Locada'
+                        imp.localizacao = cliente_atual.nome
+                        
+                        # LOG NA IMPRESSORA
+                        db.session.add(MovimentacaoImpressora(
+                            impressora_id=imp.id, 
+                            tipo='Locação', 
+                            origem='Estoque', # Assumimos estoque, ou poderíamos pegar imp.localizacao anterior
+                            destino=cliente_atual.nome, 
+                            contador_momento=imp.contador, 
+                            observacao=f"Inclusão no Contrato {contrato.numero_contrato}"
+                        ))
+                        
+                        # Log no Contrato
+                        mlt_texto = f"MLT: {imp.mlt}" if imp.mlt else "S/M"
+                        registrar_hist_contrato(contrato.id, "Adição Item", f"Adicionado: {imp.modelo} ({mlt_texto} | S/N: {imp.serial})")
+
+                    # Se já estava (MANTIDA), mas o cliente mudou (Transferência)
+                    elif imp_id in ids_manter and cliente_mudou:
+                        imp.localizacao = cliente_atual.nome
+                        
+                        # LOG NA IMPRESSORA
+                        db.session.add(MovimentacaoImpressora(
+                            impressora_id=imp.id, 
+                            tipo='Locação', 
+                            origem=cliente_antigo_nome, 
+                            destino=cliente_atual.nome, 
+                            contador_momento=imp.contador, 
+                            observacao=f"Transferência de Titularidade (Contrato {contrato.numero_contrato})"
+                        ))
+
         contrato.valor_mensal_total = total_acumulado
         
-        # 6. HISTÓRICO INTELIGENTE (COM MLT)
-        
-        # A. Removidos
-        for imp_id_old, desc_old in itens_antigos.items():
-            if imp_id_old not in itens_novos_ids:
-                registrar_hist_contrato(contrato.id, "Remoção Item", f"Retirado: {desc_old}")
-
-        # B. Adicionados
-        for imp_id_new in itens_novos_ids:
-            if imp_id_new not in itens_antigos:
-                imp_obj = Impressora.query.get(imp_id_new)
-                mlt_new = f"MLT: {imp_obj.mlt}" if imp_obj.mlt else "S/M"
-                desc_new = f"{imp_obj.modelo} ({mlt_new} | S/N: {imp_obj.serial})"
-                registrar_hist_contrato(contrato.id, "Adição Item", f"Adicionado: {desc_new}")
-
-        # C. Financeiro
+        # Log Financeiro se mudou valor
         if abs(valor_antigo - total_acumulado) > 0.01:
             registrar_hist_contrato(contrato.id, "Reajuste Financeiro", f"Valor alterado de {currency_filter(valor_antigo)} para {currency_filter(total_acumulado)}")
         
@@ -1730,6 +1340,11 @@ def editar_contrato():
         
     return redirect(url_for('contratos'))
 
+
+
+
+# --- SUBSTITUIR A ROTA cancelar_contrato_route NO app.py ---
+
 @app.route('/cancelar_contrato', methods=['POST'])
 def cancelar_contrato_route():
     c_id = request.form.get('contrato_id')
@@ -1740,18 +1355,31 @@ def cancelar_contrato_route():
         c.justificativa_cancelamento = justificativa
         c.data_fim = datetime.now().date()
         
+        # Devolver todas as impressoras ao estoque e registrar no histórico delas
         for item in c.itens:
             imp = item.impressora
-            imp.status = 'Disponível'
-            imp.localizacao = 'Estoque'
-            db.session.add(MovimentacaoImpressora(
-                impressora_id=imp.id, tipo='Estoque', origem=c.cliente.nome, 
-                destino='Estoque', contador_momento=imp.contador, 
-                observacao=f"Cancelamento Contrato: {justificativa}"
-            ))
+            if imp:
+                imp.status = 'Disponível'
+                imp.localizacao = 'Estoque'
+                
+                # LOG NA IMPRESSORA
+                db.session.add(MovimentacaoImpressora(
+                    impressora_id=imp.id, 
+                    tipo='Estoque', 
+                    origem=c.cliente.nome, 
+                    destino='Estoque', 
+                    contador_momento=imp.contador, 
+                    observacao=f"Fim de Contrato: {justificativa}"
+                ))
+        
+        # Log no Contrato
+        registrar_hist_contrato(c.id, "Cancelamento", f"Contrato cancelado. Motivo: {justificativa}")
+        
         db.session.commit()
-        flash('Contrato cancelado.')
+        flash('Contrato cancelado e equipamentos devolvidos ao estoque.')
+        
     return redirect(url_for('contratos'))
+
 
 @app.route('/reativar_contrato/<int:id>')
 def reativar_contrato(id):
@@ -1759,21 +1387,12 @@ def reativar_contrato(id):
     if c:
         conflito = False
         for item in c.itens:
-            if item.impressora.status == 'Locada':
-                conflito = True
-                break
-        
-        if conflito:
-            flash('Erro: Algumas impressoras deste contrato já foram locadas para outros clientes. Crie um novo contrato.')
+            if item.impressora.status == 'Locada': conflito = True; break
+        if conflito: flash('Erro: Algumas impressoras já foram locadas. Crie um novo contrato.')
         else:
-            c.status = 'Ativo'
-            c.justificativa_cancelamento = None
-            for item in c.itens:
-                item.impressora.status = 'Locada'
-                item.impressora.localizacao = c.cliente.nome
-            db.session.commit()
-            flash('Contrato reativado.')
-            
+            c.status = 'Ativo'; c.justificativa_cancelamento = None
+            for item in c.itens: item.impressora.status = 'Locada'; item.impressora.localizacao = c.cliente.nome
+            db.session.commit(); flash('Contrato reativado.')
     return redirect(url_for('contratos'))
 
 @app.route('/excluir_contrato/<int:id>')
@@ -1783,57 +1402,21 @@ def excluir_contrato(id):
         try:
             ContratoItem.query.filter_by(contrato_id=id).delete()
             ContratoFranquia.query.filter_by(contrato_id=id).delete()
-            
+            ContratoHistorico.query.filter_by(contrato_id=id).delete()
             db.session.delete(c)
             db.session.commit()
-            flash('Contrato excluído definitivamente do histórico.', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erro ao excluir contrato: {e}', 'danger')
-            
+            flash('Contrato excluído definitivamente.', 'success')
+        except Exception as e: db.session.rollback(); flash(f'Erro ao excluir: {e}', 'danger')
     return redirect(url_for('contratos'))
-
-@app.route('/imprimir_contrato/<int:id>')
-def imprimir_contrato_view(id):
-    contrato = Contrato.query.get_or_404(id)
-    
-    dados_itens = []
-    
-    for item in contrato.itens:
-        ultima_mov = MovimentacaoImpressora.query.filter_by(
-            impressora_id=item.impressora_id,
-            tipo='Locação',
-            destino=contrato.cliente.nome
-        ).order_by(MovimentacaoImpressora.data.desc()).first()
-        
-        data_add = ultima_mov.data.strftime('%d/%m/%Y') if ultima_mov else contrato.data_inicio.strftime('%d/%m/%Y')
-        custo_nome = item.franquia_pai.nome if item.franquia_pai else None
-        
-        dados_itens.append({
-            'modelo': item.impressora.modelo,
-            'serial': item.impressora.serial,
-            'data_inclusao': data_add,
-            'custo_nome': custo_nome,
-            'valor': item.valor_locacao_unitario
-        })
-        
-    return render_template('imprimir_contrato.html', 
-                           contrato=contrato, 
-                           dados_itens=dados_itens, 
-                           hoje=datetime.now().strftime('%d/%m/%Y %H:%M'))
 
 @app.route('/api/contrato_detalhes/<int:id>')
 def api_contrato_detalhes(id):
     try:
         c = Contrato.query.get_or_404(id)
-        
-        # Datas formatadas
         d_inicio = c.data_inicio.isoformat() if c.data_inicio else ""
         d_inicio_br = c.data_inicio.strftime('%d/%m/%Y') if c.data_inicio else ""
         d_fim = c.data_fim.isoformat() if c.data_fim else ""
         d_fim_br = c.data_fim.strftime('%d/%m/%Y') if c.data_fim else ""
-
-        # Processar itens (impressoras)
         lista_imp = []
         for item in c.itens:
             if item.impressora:
@@ -1843,134 +1426,58 @@ def api_contrato_detalhes(id):
                 imp_id = item.impressora.id
                 status_real = item.impressora.status
             else:
-                nome_display = "Impressora não vinculada"
-                mlt_display = "-"
-                serial_display = "-"
-                imp_id = ""
-                status_real = "Desconhecido"
-
-            # Dados da Franquia vinculada
+                nome_display = "Impressora não vinculada"; mlt_display = "-"; serial_display = "-"; imp_id = ""; status_real = "Desconhecido"
+            
             if item.franquia_pai:
                 nome_custo = item.franquia_pai.nome
                 tipo_franq = item.franquia_pai.tipo
                 detalhes = f"{item.franquia_pai.franquia_paginas} pág"
-            else:
-                nome_custo = "Sem Custo Vinculado"
-                tipo_franq = "Individual"
-                detalhes = "-"
-
-            # --- NOVA LÓGICA DE ALERTAS ---
-            alerta_tipo = None # 'warning' (manut), 'danger' (estoque), None (ok)
-            alerta_msg = None
-            data_evento = None
-
-            if status_real == 'Manutenção':
-                alerta_tipo = 'warning'
-                alerta_msg = 'EM MANUTENÇÃO'
+            else: nome_custo = "Sem Custo Vinculado"; tipo_franq = "Individual"; detalhes = "-"
             
-            elif status_real == 'Disponível': # Significa que está no Estoque
-                alerta_tipo = 'danger'
-                alerta_msg = 'DEVOLVIDA AO ESTOQUE'
-                
-                # Tenta descobrir QUANDO ela voltou pro estoque
-                ult_mov = MovimentacaoImpressora.query.filter_by(
-                    impressora_id=item.impressora.id,
-                    destino='Estoque'
-                ).order_by(MovimentacaoImpressora.data.desc()).first()
-                
-                if ult_mov:
-                    data_evento = ult_mov.data.strftime('%d/%m/%Y')
-            # -------------------------------
+            alerta_tipo = None; alerta_msg = None; data_evento = None
+            if status_real == 'Manutenção': alerta_tipo = 'warning'; alerta_msg = 'EM MANUTENÇÃO'
+            elif status_real == 'Disponível':
+                alerta_tipo = 'danger'; alerta_msg = 'DEVOLVIDA AO ESTOQUE'
+                ult_mov = MovimentacaoImpressora.query.filter_by(impressora_id=item.impressora.id, destino='Estoque').order_by(MovimentacaoImpressora.data.desc()).first()
+                if ult_mov: data_evento = ult_mov.data.strftime('%d/%m/%Y')
 
-            lista_imp.append({
-                'id': item.id,
-                'impressora_id': imp_id,
-                'modelo': item.impressora.modelo if item.impressora else "Desc.",
-                'serial': serial_display,
-                'mlt': mlt_display,
-                'valor': item.valor_locacao_unitario,
-                'custo_nome': nome_custo,
-                'tipo_franquia': tipo_franq,
-                'detalhes_franquia': detalhes,
-                # Campos novos para o alerta
-                'alerta_tipo': alerta_tipo,
-                'alerta_msg': alerta_msg,
-                'data_evento': data_evento,
-                
-                'franquia_individual': getattr(item, 'franquia_individual', 0),
-                'excedente_individual': getattr(item, 'valor_excedente_individual', 0)
-            })
-
-        custos_list = []
-        for f in c.franquias:
-            custos_list.append({
-                'id': f.id,
-                'nome': f.nome,
-                'tipo': f.tipo,
-                'paginas': f.franquia_paginas,
-                'valor': f.valor_franquia,
-                'excedente': f.valor_excedente
-            })
-
-        dados = {
-            'id': c.id,
-            'cliente_id': c.cliente_id,
-            'numero': c.numero_contrato,
-            'dia_vencimento': c.dia_vencimento,
-            'cliente_nome': c.cliente.nome if c.cliente else "Cliente não encontrado",
-            'valor_mensal': c.valor_mensal_total,
-            'data_inicio': d_inicio,
-            'data_inicio_br': d_inicio_br,
-            'data_fim': d_fim,
-            'data_fim_br': d_fim_br,
-            'status': c.status,
-            'pdf_url': url_for('static', filename=f'uploads/contratos/{c.arquivo_pdf}') if c.arquivo_pdf else None,
-            'custos': custos_list,
-            'impressoras': lista_imp
-        }
-        return jsonify(dados)
+            lista_imp.append({'id': item.id, 'impressora_id': imp_id, 'modelo': item.impressora.modelo if item.impressora else "Desc.", 'serial': serial_display, 'mlt': mlt_display, 'valor': item.valor_locacao_unitario, 'custo_nome': nome_custo, 'tipo_franquia': tipo_franq, 'detalhes_franquia': detalhes, 'alerta_tipo': alerta_tipo, 'alerta_msg': alerta_msg, 'data_evento': data_evento})
         
-    except Exception as e:
-        print(f"ERRO API DETALHES: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'erro': str(e)}), 500
+        custos_list = []
+        for f in c.franquias: custos_list.append({'id': f.id, 'nome': f.nome, 'tipo': f.tipo, 'paginas': f.franquia_paginas, 'valor': f.valor_franquia, 'excedente': f.valor_excedente})
+        
+        dados = {'id': c.id, 'cliente_id': c.cliente_id, 'numero': c.numero_contrato, 'dia_vencimento': c.dia_vencimento, 'cliente_nome': c.cliente.nome if c.cliente else "Cliente não encontrado", 'valor_mensal': c.valor_mensal_total, 'data_inicio': d_inicio, 'data_inicio_br': d_inicio_br, 'data_fim': d_fim, 'data_fim_br': d_fim_br, 'status': c.status, 'pdf_url': url_for('static', filename=f'uploads/contratos/{c.arquivo_pdf}') if c.arquivo_pdf else None, 'custos': custos_list, 'impressoras': lista_imp}
+        return jsonify(dados)
+    except Exception as e: print(f"ERRO API DETALHES: {e}"); traceback.print_exc(); return jsonify({'erro': str(e)}), 500
 
 @app.route('/api/contrato_historico_log/<int:id>')
 def api_contrato_historico_log(id):
     logs = ContratoHistorico.query.filter_by(contrato_id=id).order_by(ContratoHistorico.data.desc()).all()
     data = []
-    for log in logs:
-        data.append({
-            'data': log.data.strftime('%d/%m/%Y %H:%M'),
-            'acao': log.acao,
-            'detalhes': log.detalhes,
-            'usuario': log.usuario
-        })
+    for log in logs: data.append({'data': log.data.strftime('%d/%m/%Y %H:%M'), 'acao': log.acao, 'detalhes': log.detalhes, 'usuario': log.usuario})
     return jsonify(data)
+
+@app.route('/imprimir_contrato/<int:id>')
+def imprimir_contrato_view(id):
+    contrato = Contrato.query.get_or_404(id)
+    dados_itens = []
+    for item in contrato.itens:
+        ultima_mov = MovimentacaoImpressora.query.filter_by(impressora_id=item.impressora_id, tipo='Locação', destino=contrato.cliente.nome).order_by(MovimentacaoImpressora.data.desc()).first()
+        data_add = ultima_mov.data.strftime('%d/%m/%Y') if ultima_mov else contrato.data_inicio.strftime('%d/%m/%Y')
+        custo_nome = item.franquia_pai.nome if item.franquia_pai else None
+        dados_itens.append({'modelo': item.impressora.modelo, 'serial': item.impressora.serial, 'data_inclusao': data_add, 'custo_nome': custo_nome, 'valor': item.valor_locacao_unitario})
+    return render_template('imprimir_contrato.html', contrato=contrato, dados_itens=dados_itens, hoje=datetime.now().strftime('%d/%m/%Y %H:%M'))
 
 def verificar_migracoes():
     with app.app_context():
-        db.create_all() # Cria tabelas básicas
-        
-        # Verifica se a tabela de Histórico já existe, senão avisa/cria
-        try:
-            db.session.execute(text('SELECT * FROM contrato_historico LIMIT 1'))
-        except:
-            print("Criando tabela contrato_historico...")
-            db.create_all()
-            
-        # Verificação legada para evitar erro na coluna tipo_franquia_item
-        try:
-            db.session.execute(text('SELECT tipo_franquia_item FROM contrato_item LIMIT 1'))
+        db.create_all()
+        try: db.session.execute(text('SELECT * FROM contrato_historico LIMIT 1'))
+        except: print("Criando tabela contrato_historico..."); db.create_all()
+        try: db.session.execute(text('SELECT tipo_franquia_item FROM contrato_item LIMIT 1'))
         except:
             print("Migrando Contrato Item...")
-            try:
-                db.session.execute(text('ALTER TABLE contrato_item ADD COLUMN tipo_franquia_item VARCHAR(20) DEFAULT "Individual"'))
-                db.session.execute(text('ALTER TABLE contrato ADD COLUMN justificativa_cancelamento TEXT'))
-                db.session.commit()
+            try: db.session.execute(text('ALTER TABLE contrato_item ADD COLUMN tipo_franquia_item VARCHAR(20) DEFAULT "Individual"')); db.session.execute(text('ALTER TABLE contrato ADD COLUMN justificativa_cancelamento TEXT')); db.session.commit()
             except: pass
-
 
 if __name__ == '__main__':
     verificar_migracoes()
