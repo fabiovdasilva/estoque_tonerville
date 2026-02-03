@@ -1025,34 +1025,41 @@ def criar_impressora():
         flash(f'Erro ao cadastrar: {str(e)}', 'danger')
     return redirect(url_for('impressoras'))
 
+
 @app.route('/editar_impressora', methods=['POST'])
 def editar_impressora():
     try:
+        # Pega o ID
         imp_id = request.form.get('impressora_id')
-        imp = Impressora.query.get(imp_id)
-        if imp:
-            marca = request.form['marca']
-            modelo_input = request.form['modelo'].strip()
-            
-            # Mesma lógica de concatenação
-            if modelo_input.lower().startswith(marca.lower()):
-                modelo_final = modelo_input
-            else:
-                modelo_final = f"{marca} {modelo_input}"
+        impressora = Impressora.query.get(imp_id)
+        
+        if not impressora:
+            flash('Impressora não encontrada.', 'danger')
+            return redirect(url_for('impressoras'))
 
-            imp.marca = marca
-            imp.modelo = modelo_final
-            imp.serial = request.form['serial']
-            imp.mlt = request.form['mlt']
-            imp.observacao = request.form['observacao']
-            
-            db.session.commit()
-            flash('Informações atualizadas.', 'success')
+        # Atualiza os dados básicos
+        impressora.marca = request.form.get('marca')
+        impressora.modelo = request.form.get('modelo')
+        impressora.serial = request.form.get('serial')
+        impressora.mlt = request.form.get('mlt')
+        impressora.observacao = request.form.get('observacao')
+        
+        # --- AQUI ESTÁ A CORREÇÃO ---
+        # Verifica se veio um valor de contador e salva
+        novo_contador = request.form.get('contador')
+        if novo_contador is not None and novo_contador != '':
+            impressora.contador = int(novo_contador)
+        # ----------------------------
+
+        db.session.commit()
+        flash('Dados da impressora atualizados com sucesso!', 'success')
+        
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro ao editar: {e}', 'danger')
-    return redirect(url_for('impressoras'))
+        print(f"Erro ao editar impressora: {e}")
+        flash('Erro ao atualizar impressora.', 'danger')
 
+    return redirect(url_for('impressoras'))
 
 
 

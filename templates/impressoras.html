@@ -172,15 +172,15 @@
                             <td class="text-end pe-4">
                                 <div class="d-flex justify-content-end gap-1">
                                     <button class="btn btn-sm btn-outline-dark" 
-                                            onclick="event.stopPropagation(); abrirMovimentacao('{{ imp.id }}', '{{ imp.modelo }}', '{{ imp.contador }}', '{{ imp.status }}')" 
-                                            title="Movimentar">
-                                        <i class="fas fa-exchange-alt"></i>
-                                    </button>
+        onclick="event.stopPropagation(); abrirMovimentacao('{{ imp.id }}', '{{ imp.modelo }}', '{{ imp.contador }}', '{{ imp.status }}', '{{ imp.localizacao }}')" 
+        title="Movimentar">
+    <i class="fas fa-exchange-alt"></i>
+                    </button>
                                     <button class="btn btn-sm btn-outline-primary" 
-                                            onclick="event.stopPropagation(); abrirEdicao('{{ imp.id }}', '{{ imp.marca }}', '{{ imp.modelo }}', '{{ imp.serial }}', '{{ imp.mlt }}', '{{ imp.observacao }}')" 
-                                            title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
+        onclick="event.stopPropagation(); abrirEdicao('{{ imp.id }}', '{{ imp.marca }}', '{{ imp.modelo }}', '{{ imp.serial }}', '{{ imp.mlt }}', '{{ imp.observacao }}', '{{ imp.contador }}')" 
+        title="Editar">
+    <i class="fas fa-edit"></i>
+</button>
                                     <a href="{{ url_for('excluir_impressora', id=imp.id) }}" 
                                        class="btn btn-sm btn-outline-danger" 
                                        onclick="event.stopPropagation(); return confirm('Excluir esta impressora?')" 
@@ -264,54 +264,85 @@
 <div class="modal fade" id="modalMovimentacao" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-dark text-white">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title"><i class="fas fa-exchange-alt me-2"></i>Movimentar Equipamento</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+            
             <form action="{{ url_for('movimentar_impressora') }}" method="POST">
                 <input type="hidden" name="impressora_id" id="mov_id">
-                <div class="modal-body">
-                    <div class="alert alert-light border text-center mb-3">
-                        <strong id="mov_titulo" class="text-dark"></strong>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Tipo de Movimento</label>
-                        <select class="form-select" name="tipo_movimentacao" id="selectTipoMov" onchange="toggleClienteMov()" required>
-                            <option value="Locação">Enviar para Locação (Cliente)</option>
-                            <option value="Devolução">Devolver ao Estoque (Vindo de Cliente)</option>
-                            <option value="Manutenção" class="text-danger fw-bold">Enviar para Manutenção</option>
-                            <option value="Disponibilizar" class="text-success fw-bold">Finalizar Manutenção (Voltar p/ Estoque)</option>
-                        </select>
-                    </div>
+                
+<div class="modal-body bg-light">
+    
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+            <div class="d-flex align-items-center mb-2">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3">
+                    <i class="fas fa-print fa-lg"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold text-dark" id="mov_titulo">...</h6>
+                    <small class="text-muted">Equipamento selecionado</small>
+                </div>
+            </div>
+            
+            <div id="mov_status_aviso" class="alert p-2 mb-0 text-center small fw-bold">
+                </div>
+        </div>
+    </div>
 
-                    <div class="mb-3" id="divClienteMov">
-                        <label class="form-label small fw-bold">Cliente Destino</label>
-                        <select class="form-select" name="cliente_id">
-                            <option value="">Selecione...</option>
-                            {% for c in clientes %}
-                            <option value="{{ c.id }}">{{ c.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <span class="section-title">Dados da Movimentação</span>
+            
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label small fw-bold text-muted">Ação Desejada</label>
+                    <select class="form-select" name="tipo_movimentacao" id="selectTipoMov" onchange="toggleClienteMov()" required>
+                        <option value="Locação">Enviar para Locação (Cliente)</option>
+                        <option value="Devolução">Devolver ao Estoque</option>
+                        <option value="Manutenção" class="text-danger fw-bold">Enviar para Manutenção</option>
+                        <option value="Disponibilizar" class="text-success fw-bold">Finalizar Manutenção</option>
+                    </select>
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Contador Atual</label>
-                        <input type="number" class="form-control" name="contador_atual" id="mov_contador" required>
-                    </div>
+                <div class="col-12" id="divClienteMov">
+                    <label class="form-label small fw-bold text-muted">Cliente Destino</label>
+                    <select class="form-select" name="cliente_id">
+                        <option value="">Selecione o cliente...</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}">{{ c.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Observação</label>
-                        <textarea class="form-control" name="observacao" rows="2" placeholder="Motivo..."></textarea>
+                <div class="col-12">
+                    <label class="form-label small fw-bold text-muted">Contador Atual</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white text-muted border-end-0"><i class="fas fa-tachometer-alt"></i></span>
+                        <input type="number" class="form-control border-start-0 ps-0" name="contador_atual" id="mov_contador" required>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-dark w-100 fw-bold">Confirmar</button>
+
+                <div class="col-12">
+                    <label class="form-label small fw-bold text-muted">Observação / Motivo</label>
+                    <textarea class="form-control bg-light" name="observacao" rows="2" placeholder="Descreva o motivo..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Confirmar</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
 
 <div class="modal fade" id="modalEditarImpressora" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -320,8 +351,10 @@
                 <h5 class="modal-title text-primary"><i class="fas fa-edit me-2"></i>Editar Impressora</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ url_for('editar_impressora') }}" method="POST">
+            
+            <form action="{{ url_for('editar_impressora') }}" method="POST" id="formEditarImpressora">
                 <input type="hidden" name="impressora_id" id="edit_imp_id">
+                
                 <div class="modal-body bg-light">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body">
@@ -339,21 +372,68 @@
                                     </select>
                                 </div>
                                 <div class="col-md-8">
-                                    <label class="form-label small fw-bold text-muted">Modelo</label>
+                                    <label class="form-label small fw-bold text-muted">Modelo (Sem a marca)</label>
                                     <input type="text" class="form-control" name="modelo" id="edit_modelo" required>
                                 </div>
-                                <div class="col-md-6"><label class="form-label small fw-bold text-muted">Serial</label><input type="text" class="form-control" name="serial" id="edit_serial"></div>
-                                <div class="col-md-6"><label class="form-label small fw-bold text-muted">MLT</label><input type="text" class="form-control" name="mlt" id="edit_mlt"></div>
-                                <div class="col-12"><label class="form-label small fw-bold text-muted">Obs</label><textarea class="form-control" name="observacao" id="edit_obs"></textarea></div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Serial</label>
+                                    <input type="text" class="form-control" name="serial" id="edit_serial">
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Contador Atual</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted"><i class="fas fa-tachometer-alt"></i></span>
+                                        <input type="number" class="form-control" name="contador" id="edit_contador" data-original="">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-bold text-muted">MLT</label>
+                                    <input type="text" class="form-control" name="mlt" id="edit_mlt">
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold text-muted">Obs</label>
+                                    <textarea class="form-control" name="observacao" id="edit_obs"></textarea>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 bg-light"><button type="submit" class="btn btn-primary">Salvar Alterações</button></div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="button" class="btn btn-primary px-4" onclick="verificarAlteracaoContador()">Salvar Alterações</button>
+                </div>
             </form>
         </div>
     </div>
 </div>
+
+
+<div class="modal fade" id="modalAvisoContador" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning text-dark border-bottom-0 justify-content-center">
+                <i class="fas fa-exclamation-triangle fa-3x"></i>
+            </div>
+            <div class="modal-body text-center pt-0">
+                <h5 class="fw-bold mt-3">Atenção!</h5>
+                <p class="small text-muted mb-4">
+                    Você alterou o contador manualmente.<br>
+                    Isso pode impactar o histórico de cobrança.
+                </p>
+                <p class="fw-bold mb-3">Deseja realmente salvar?</p>
+                
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-dark fw-bold" onclick="finalizarEdicao()">Sim, Salvar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <div class="modal fade" id="modalHistorico" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -440,92 +520,157 @@
 
 {% block scripts %}
 <script>
-    // Inicialização dos Modais
+    // --- 1. INICIALIZAÇÃO DOS MODAIS ---
     var modalNova = new bootstrap.Modal(document.getElementById('modalNovaImpressora'));
     var modalMov = new bootstrap.Modal(document.getElementById('modalMovimentacao'));
     var modalEdit = new bootstrap.Modal(document.getElementById('modalEditarImpressora'));
     var modalHist = new bootstrap.Modal(document.getElementById('modalHistorico'));
+    var modalAviso = new bootstrap.Modal(document.getElementById('modalAvisoContador'));
 
+    // --- 2. FUNÇÕES DE NOVA IMPRESSORA ---
     function abrirModalNova() {
         modalNova.show();
     }
 
-    function abrirMovimentacao(id, modelo, contador, statusAtual) {
+    // --- 3. FUNÇÕES DE MOVIMENTAÇÃO ---
+    function abrirMovimentacao(id, modelo, contador, statusAtual, localizacao) {
         document.getElementById('mov_id').value = id;
         document.getElementById('mov_titulo').innerText = modelo;
         document.getElementById('mov_contador').value = contador;
         
+        // Configuração do Aviso Visual de Status
+        var aviso = document.getElementById('mov_status_aviso');
+        aviso.className = "alert p-2 mb-0 text-center small fw-bold "; // Reseta classes
+        
+        if (statusAtual === 'Disponível') {
+            aviso.classList.add('alert-success');
+            aviso.innerHTML = '<i class="fas fa-check-circle me-1"></i> Atualmente em ESTOQUE';
+        } else if (statusAtual === 'Locada') {
+            aviso.classList.add('alert-warning');
+            aviso.classList.add('text-dark');
+            aviso.innerHTML = '<i class="fas fa-map-marker-alt me-1"></i> Local atual: ' + localizacao;
+        } else {
+            aviso.classList.add('alert-danger');
+            aviso.innerHTML = '<i class="fas fa-tools me-1"></i> Atualmente em MANUTENÇÃO';
+        }
+
+        // Seleção inteligente da ação baseada no status
         var select = document.getElementById('selectTipoMov');
+        if(statusAtual === 'Disponível') {
+            select.value = 'Locação'; 
+        } else if(statusAtual === 'Locada') {
+            select.value = 'Devolução';
+        } else if(statusAtual === 'Manutenção') {
+            select.value = 'Disponibilizar';
+        }
         
-        // Seleção Inteligente
-        if(statusAtual === 'Disponível') select.value = 'Locação'; 
-        else if(statusAtual === 'Locada') select.value = 'Devolução';
-        else if(statusAtual === 'Manutenção') select.value = 'Disponibilizar';
-        
-        toggleClienteMov();
+        toggleClienteMov(); // Ajusta visibilidade do campo cliente
         modalMov.show();
     }
 
     function toggleClienteMov() {
         var tipo = document.getElementById('selectTipoMov').value;
         var div = document.getElementById('divClienteMov');
+        var selectCli = div.querySelector('select');
+
         if (tipo === 'Locação') {
             div.style.display = 'block';
-            div.querySelector('select').setAttribute('required', 'required');
+            selectCli.setAttribute('required', 'required');
         } else {
             div.style.display = 'none';
-            div.querySelector('select').removeAttribute('required');
+            selectCli.removeAttribute('required');
+            selectCli.value = ""; // Limpa seleção para evitar erros
         }
     }
 
-    function abrirEdicao(id, marca, modeloFull, serial, mlt, obs) {
+    // --- 4. FUNÇÕES DE EDIÇÃO COM VALIDAÇÃO DE CONTADOR ---
+    function abrirEdicao(id, marca, modeloFull, serial, mlt, obs, contador) {
         document.getElementById('edit_imp_id').value = id;
         document.getElementById('edit_marca').value = marca;
+        
+        // Remove a marca do nome do modelo para exibir limpo
         let modeloLimpo = modeloFull.replace(marca, '').trim();
         document.getElementById('edit_modelo').value = modeloLimpo;
+        
         document.getElementById('edit_serial').value = serial;
         document.getElementById('edit_mlt').value = mlt;
         document.getElementById('edit_obs').value = obs;
+        
+        // Configura contador e salva valor original para comparação
+        var inputContador = document.getElementById('edit_contador');
+        inputContador.value = contador;
+        inputContador.setAttribute('data-original', contador);
+        
         modalEdit.show();
     }
 
+    function verificarAlteracaoContador() {
+        var input = document.getElementById('edit_contador');
+        var original = input.getAttribute('data-original');
+        var atual = input.value;
+
+        // Se o valor mudou, abre o modal de aviso e impede o envio imediato
+        if (original != atual) {
+            modalAviso.show();
+            return; 
+        }
+        
+        // Se não mudou, salva direto
+        finalizarEdicao();
+    }
+
+    function finalizarEdicao() {
+        // Envia o formulário
+        document.getElementById('formEditarImpressora').submit();
+    }
+
+    // --- 5. FUNÇÕES DE HISTÓRICO (TIMELINE E O.S.) ---
     function abrirHistorico(id, statusAtual) {
-        // Configura Formulário de O.S. (Só aparece se Manutenção)
+        // Configura Formulário de O.S. (Só exibe se estiver em Manutenção)
         document.getElementById('hist_form_imp_id').value = id;
         var divForm = document.getElementById('area_adicionar_log');
         var badgeContainer = document.getElementById('hist_badges');
 
         if (statusAtual === 'Manutenção') {
             divForm.style.display = 'block';
-            badgeContainer.innerHTML = '<span class="badge bg-danger">EM MANUTENÇÃO</span>';
+            badgeContainer.innerHTML = '<span class="badge bg-danger shadow-sm">EM MANUTENÇÃO</span>';
         } else {
             divForm.style.display = 'none';
-            if(statusAtual === 'Locada') badgeContainer.innerHTML = '<span class="badge bg-warning text-dark">LOCADA</span>';
-            else badgeContainer.innerHTML = '<span class="badge bg-success">DISPONÍVEL</span>';
+            if(statusAtual === 'Locada') {
+                badgeContainer.innerHTML = '<span class="badge bg-warning text-dark shadow-sm">LOCADA</span>';
+            } else {
+                badgeContainer.innerHTML = '<span class="badge bg-success shadow-sm">DISPONÍVEL</span>';
+            }
         }
 
+        // Elementos de UI para Loading
         var timeline = document.getElementById('timeline_container');
         var listaManut = document.getElementById('accordionManutencoes');
         var listaInsumos = document.getElementById('tabelaInsumosImpressora');
         
-        timeline.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary"></div></div>';
-        listaManut.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-danger"></div></div>';
+        // Mostra spinners
+        timeline.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>';
+        listaManut.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-danger"></div></div>';
+        listaInsumos.innerHTML = '<tr><td colspan="4" class="text-center p-4"><div class="spinner-border text-success"></div></td></tr>';
         
         modalHist.show();
 
+        // Busca dados completos
         fetch('/api/historico_completo/' + id)
             .then(response => response.json())
             .then(data => {
-                // 1. Timeline
+                
+                // A. Renderizar Timeline (Movimentações)
                 timeline.innerHTML = '';
                 if (!data.movimentacoes || data.movimentacoes.length === 0) {
-                    timeline.innerHTML = '<div class="text-muted fst-italic ms-3">Sem registros.</div>';
+                    timeline.innerHTML = '<div class="text-muted fst-italic ms-3 p-3">Nenhuma movimentação registrada.</div>';
                 } else {
                     data.movimentacoes.forEach(m => {
-                        let borderClass = '#007bff';
-                        if(m.tipo.includes('Manutenção')) borderClass = '#dc3545';
-                        if(m.tipo.includes('Locação')) borderClass = '#ffc107';
-                        if(m.tipo.includes('Devolução')) borderClass = '#28a745';
+                        // Cores da Timeline
+                        let borderClass = '#0d6efd'; // Azul padrão
+                        if(m.tipo.includes('Manutenção')) borderClass = '#dc3545'; // Vermelho
+                        if(m.tipo.includes('Locação')) borderClass = '#ffc107'; // Amarelo
+                        if(m.tipo.includes('Devolução')) borderClass = '#198754'; // Verde
 
                         let html = `
                             <div class="timeline-item">
@@ -536,36 +681,47 @@
                                     <div class="text-muted small">
                                         ${m.origem} <i class="fas fa-arrow-right mx-1"></i> <strong>${m.destino}</strong>
                                     </div>
-                                    ${m.obs ? `<div class="text-muted small fst-italic mt-1">${m.obs}</div>` : ''}
+                                    ${m.obs ? `<div class="text-muted small fst-italic mt-1 border-top pt-1" style="border-color: rgba(0,0,0,0.05) !important;">${m.obs}</div>` : ''}
                                 </div>
-                            </div>`;
+                            </div>
+                        `;
                         timeline.innerHTML += html;
                     });
                 }
 
-                // 2. Manutenções
+                // B. Renderizar Manutenções (Accordion)
                 listaManut.innerHTML = '';
                 if (!data.manutencoes || data.manutencoes.length === 0) {
-                    listaManut.innerHTML = '<div class="alert alert-light border text-center">Nenhum histórico de O.S.</div>';
+                    listaManut.innerHTML = '<div class="alert alert-light border text-center text-muted">Nenhum histórico de O.S.</div>';
                 } else {
                     data.manutencoes.forEach((os, index) => {
-                        let badge = os.status === 'Aberta' ? '<span class="badge bg-warning text-dark">ABERTA</span>' : '<span class="badge bg-secondary">FECHADA</span>';
-                        let collapseShow = index === 0 ? 'show' : ''; 
+                        let badge = os.status === 'Aberta' 
+                            ? '<span class="badge bg-warning text-dark">ABERTA</span>' 
+                            : '<span class="badge bg-secondary">FECHADA</span>';
                         
+                        let collapseShow = index === 0 ? 'show' : ''; // Abre só o primeiro
+                        
+                        // Renderiza Logs Internos da OS
                         let logsHtml = '<ul class="list-group list-group-flush small mb-3">';
                         if(os.logs && os.logs.length > 0) {
                             os.logs.forEach(log => {
-                                logsHtml += `<li class="list-group-item bg-transparent px-0 border-bottom-0 pb-1">
-                                    <span class="fw-bold text-primary">${log.titulo}</span>: ${log.obs}
-                                    <br><span class="text-muted" style="font-size:0.75rem">${log.data}</span></li>`;
+                                logsHtml += `
+                                    <li class="list-group-item bg-transparent px-0 border-bottom py-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-bold text-primary">${log.titulo}</span>
+                                            <span class="text-muted" style="font-size:0.75rem">${log.data}</span>
+                                        </div>
+                                        <div class="text-dark">${log.obs}</div>
+                                    </li>
+                                `;
                             });
                         } else {
-                            logsHtml += '<li class="list-group-item bg-transparent px-0 text-muted fst-italic">Sem detalhes técnicos.</li>';
+                            logsHtml += '<li class="list-group-item bg-transparent px-0 text-muted fst-italic">Aguardando registros técnicos...</li>';
                         }
                         logsHtml += '</ul>';
 
                         let itemHtml = `
-                            <div class="accordion-item">
+                            <div class="accordion-item mb-2 border shadow-sm" style="border-radius: 6px; overflow: hidden;">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button ${index !== 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#osCollapse${index}">
                                         <div class="d-flex w-100 justify-content-between me-3 align-items-center">
@@ -575,32 +731,45 @@
                                     </button>
                                 </h2>
                                 <div id="osCollapse${index}" class="accordion-collapse collapse ${collapseShow}" data-bs-parent="#accordionManutencoes">
-                                    <div class="accordion-body">
-                                        <div class="alert alert-light border small mb-3"><strong>Motivo:</strong> ${os.motivo}</div>
+                                    <div class="accordion-body bg-light">
+                                        <div class="alert alert-warning bg-opacity-10 border-warning small mb-3 text-dark">
+                                            <strong>Motivo da Abertura:</strong> ${os.motivo}
+                                        </div>
+                                        <h6 class="text-muted small fw-bold text-uppercase border-bottom pb-2 mb-2">Diário Técnico</h6>
                                         ${logsHtml}
-                                        ${os.fim ? `<div class="text-end small fw-bold text-success mt-2 pt-2 border-top">Fim: ${os.fim}</div>` : ''}
+                                        ${os.fim ? `<div class="text-end small fw-bold text-success mt-2 pt-2 border-top">Encerrada em: ${os.fim}</div>` : ''}
                                     </div>
                                 </div>
-                            </div>`;
+                            </div>
+                        `;
                         listaManut.innerHTML += itemHtml;
                     });
                 }
 
-                // 3. Insumos
+                // C. Renderizar Insumos
                 listaInsumos.innerHTML = '';
                 if (!data.insumos || data.insumos.length === 0) {
-                    listaInsumos.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-3">Nenhum insumo enviado.</td></tr>';
+                    listaInsumos.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">Nenhum insumo enviado para esta máquina.</td></tr>';
                 } else {
                     data.insumos.forEach(i => {
-                        listaInsumos.innerHTML += `<tr>
-                            <td class="text-muted">${i.data}</td>
-                            <td class="fw-bold">${i.produto}</td>
-                            <td class="text-center text-primary fw-bold">${i.qtd}</td>
-                            <td class="text-end text-muted small">Pedido #${i.pedido}</td></tr>`;
+                        listaInsumos.innerHTML += `
+                            <tr>
+                                <td class="text-muted ps-3">${i.data}</td>
+                                <td>
+                                    <div class="fw-bold text-dark">${i.produto}</div>
+                                    <small class="text-muted">${i.marca}</small>
+                                </td>
+                                <td class="text-center fw-bold text-primary">${i.qtd}</td>
+                                <td class="text-end pe-3 text-muted small">#${i.pedido}</td>
+                            </tr>
+                        `;
                     });
                 }
             })
-            .catch(err => { console.error(err); timeline.innerHTML = '<div class="text-danger p-3">Erro ao carregar.</div>'; });
+            .catch(err => {
+                console.error(err);
+                timeline.innerHTML = '<div class="alert alert-danger m-3">Erro ao carregar dados.</div>';
+            });
     }
 </script>
 {% endblock %}
