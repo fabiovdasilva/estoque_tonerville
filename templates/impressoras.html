@@ -4,12 +4,25 @@
 <style>
     .page-title { color: #2C3E50 !important; font-family: 'Segoe UI', sans-serif; font-weight: 700; margin-bottom: 5px; }
     
-    /* Cards */
-    .card-overview { border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); color: white; position: relative; overflow: hidden; }
-    .bg-gradient-info { background: linear-gradient(135deg, #3498db, #2980b9); }
-    .bg-gradient-success { background: linear-gradient(135deg, #2ecc71, #27ae60); }
-    .bg-gradient-warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
-    .bg-gradient-danger { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+    /* --- Cards Estilo Dashboard --- */
+    .card-dashboard { 
+        border: none; 
+        border-radius: 8px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        color: white; 
+        transition: transform 0.2s; 
+        position: relative; 
+        overflow: hidden; 
+    }
+    .card-dashboard:hover { transform: translateY(-3px); }
+    .card-dashboard h3 { font-weight: 700; font-size: 2.2rem; margin: 0; }
+    .card-dashboard small { text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; opacity: 0.95; }
+    
+    /* Gradientes idênticos ao Dashboard */
+    .bg-gradient-primary { background: linear-gradient(135deg, #2980b9, #2c3e50); } /* Azul Escuro */
+    .bg-gradient-success { background: linear-gradient(135deg, #27ae60, #16a085); } /* Verde */
+    .bg-gradient-warning { background: linear-gradient(135deg, #f39c12, #e67e22); } /* Laranja */
+    .bg-gradient-danger  { background: linear-gradient(135deg, #e74c3c, #c0392b); } /* Vermelho */
 
     /* Tabela */
     .table thead th { 
@@ -45,7 +58,7 @@
 
     <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="card card-overview bg-gradient-info p-3">
+            <div class="card card-dashboard bg-gradient-primary p-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div><h3>{{ total }}</h3><small>Total Máquinas</small></div>
                     <i class="fas fa-print fa-2x opacity-50"></i>
@@ -53,7 +66,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card card-overview bg-gradient-success p-3">
+            <div class="card card-dashboard bg-gradient-success p-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div><h3>{{ disponiveis }}</h3><small>Disponíveis</small></div>
                     <i class="fas fa-check-circle fa-2x opacity-50"></i>
@@ -61,7 +74,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card card-overview bg-gradient-warning p-3">
+            <div class="card card-dashboard bg-gradient-warning p-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div><h3>{{ locadas }}</h3><small>Locadas</small></div>
                     <i class="fas fa-truck-loading fa-2x opacity-50"></i>
@@ -69,7 +82,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card card-overview bg-gradient-danger p-3">
+            <div class="card card-dashboard bg-gradient-danger p-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div><h3>{{ manutencao }}</h3><small>Em Manutenção</small></div>
                     <i class="fas fa-tools fa-2x opacity-50"></i>
@@ -113,6 +126,12 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
+                <style>
+                    /* Torna a linha clicável visualmente */
+                    .clickable-row { cursor: pointer; transition: background-color 0.2s; }
+                    .clickable-row:hover { background-color: rgba(52, 152, 219, 0.05) !important; }
+                </style>
+
                 <table class="table table-hover mb-0 align-middle">
                     <thead>
                         <tr>
@@ -125,7 +144,7 @@
                     </thead>
                     <tbody>
                         {% for imp in impressoras %}
-                        <tr>
+                        <tr class="clickable-row" onclick="abrirHistorico('{{ imp.id }}')">
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">{{ imp.modelo }}</div>
                                 <div class="text-muted small">
@@ -145,10 +164,24 @@
                             <td class="fw-bold">{{ imp.contador }}</td>
                             <td class="text-end pe-4">
                                 <div class="d-flex justify-content-end gap-1">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="abrirHistorico('{{ imp.id }}')" title="Histórico"><i class="fas fa-history"></i></button>
-                                    <button class="btn btn-sm btn-outline-dark" onclick="abrirMovimentacao('{{ imp.id }}', '{{ imp.modelo }}', '{{ imp.contador }}', '{{ imp.status }}')" title="Movimentar"><i class="fas fa-exchange-alt"></i></button>
-                                    <button class="btn btn-sm btn-outline-primary" onclick="abrirEdicao('{{ imp.id }}', '{{ imp.marca }}', '{{ imp.modelo }}', '{{ imp.serial }}', '{{ imp.mlt }}', '{{ imp.observacao }}')" title="Editar"><i class="fas fa-edit"></i></button>
-                                    <a href="{{ url_for('excluir_impressora', id=imp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Excluir esta impressora?')" title="Excluir"><i class="fas fa-trash"></i></a>
+                                    <button class="btn btn-sm btn-outline-dark" 
+                                            onclick="event.stopPropagation(); abrirMovimentacao('{{ imp.id }}', '{{ imp.modelo }}', '{{ imp.contador }}', '{{ imp.status }}')" 
+                                            title="Movimentar">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="event.stopPropagation(); abrirEdicao('{{ imp.id }}', '{{ imp.marca }}', '{{ imp.modelo }}', '{{ imp.serial }}', '{{ imp.mlt }}', '{{ imp.observacao }}')" 
+                                            title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    
+                                    <a href="{{ url_for('excluir_impressora', id=imp.id) }}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       onclick="event.stopPropagation(); return confirm('Excluir esta impressora?')" 
+                                       title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -160,6 +193,8 @@
             </div>
         </div>
     </div>
+
+
 </div>
 
 <div class="modal fade" id="modalNovaImpressora" tabindex="-1">
