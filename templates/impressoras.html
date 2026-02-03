@@ -2,9 +2,10 @@
 
 {% block content %}
 <style>
+    /* --- Estilos da Página --- */
     .page-title { color: #2C3E50 !important; font-family: 'Segoe UI', sans-serif; font-weight: 700; margin-bottom: 5px; }
     
-    /* --- Cards Estilo Dashboard --- */
+    /* Cards Estilo Dashboard */
     .card-dashboard { 
         border: none; 
         border-radius: 8px; 
@@ -18,27 +19,39 @@
     .card-dashboard h3 { font-weight: 700; font-size: 2.2rem; margin: 0; }
     .card-dashboard small { text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; opacity: 0.95; }
     
-    /* Gradientes idênticos ao Dashboard */
-    .bg-gradient-primary { background: linear-gradient(135deg, #2980b9, #2c3e50); } /* Azul Escuro */
-    .bg-gradient-success { background: linear-gradient(135deg, #27ae60, #16a085); } /* Verde */
-    .bg-gradient-warning { background: linear-gradient(135deg, #f39c12, #e67e22); } /* Laranja */
-    .bg-gradient-danger  { background: linear-gradient(135deg, #e74c3c, #c0392b); } /* Vermelho */
+    /* Gradientes */
+    .bg-gradient-primary { background: linear-gradient(135deg, #2980b9, #2c3e50); } 
+    .bg-gradient-success { background: linear-gradient(135deg, #27ae60, #16a085); }
+    .bg-gradient-warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
+    .bg-gradient-danger  { background: linear-gradient(135deg, #e74c3c, #c0392b); }
 
-    /* Tabela */
-    .table thead th { 
-        background-color: #f8f9fa; color: #6c757d; font-weight: 700; font-size: 0.8rem; 
-        border-bottom: 2px solid #e9ecef; border-top: none; padding: 12px 15px; 
-        text-transform: uppercase; letter-spacing: 0.5px; 
-    }
-    .table tbody td { vertical-align: middle; color: #495057; font-size: 0.9rem; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; }
-    
-    /* Status Badge */
+    /* Badge de Status */
     .badge-status { padding: 5px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
     .status-disp { background-color: rgba(39, 174, 96, 0.1); color: #27ae60; border: 1px solid rgba(39, 174, 96, 0.2); }
     .status-loc { background-color: rgba(52, 152, 219, 0.1); color: #2980b9; border: 1px solid rgba(52, 152, 219, 0.2); }
     .status-manut { background-color: rgba(243, 156, 18, 0.1); color: #d35400; border: 1px solid rgba(243, 156, 18, 0.2); }
 
-    .section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #adb5bd; margin-bottom: 10px; display: block; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    /* Timeline Vertical (Histórico) */
+    .timeline { position: relative; padding-left: 30px; border-left: 2px solid #e9ecef; margin-left: 10px; margin-top: 20px; }
+    .timeline-item { position: relative; margin-bottom: 25px; }
+    .timeline-marker { position: absolute; top: 0; left: -36px; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid #007bff; }
+    .timeline-content { padding-bottom: 5px; }
+    .timeline-date { font-size: 0.8rem; color: #6c757d; font-weight: 600; margin-bottom: 2px; }
+    .timeline-title { font-weight: 700; font-size: 1rem; color: #2c3e50; }
+    
+    /* Tabela Clicável */
+    .clickable-row { cursor: pointer; transition: background-color 0.1s; }
+    
+    /* Form de Manutenção no Histórico */
+    .os-log-box { background-color: rgba(243, 156, 18, 0.05); border-left: 4px solid #f39c12; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+
+    /* Modo Escuro Ajustes Específicos */
+    body.dark-mode .timeline { border-left-color: #2d3748; }
+    body.dark-mode .timeline-marker { background: #1a222c; border-color: #3498db; }
+    body.dark-mode .timeline-title { color: #e0e6ed; }
+    body.dark-mode .timeline-date { color: #94a3b8; }
+    body.dark-mode .os-log-box { background-color: rgba(243, 156, 18, 0.1); }
+    body.dark-mode .clickable-row:hover { background-color: rgba(255, 255, 255, 0.05) !important; }
 </style>
 
 <div id="impressoras-page" class="page-content active">
@@ -91,7 +104,7 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="card border-0 shadow-sm mb-4 filter-bar">
         <div class="card-body py-3">
             <form method="GET" action="{{ url_for('impressoras') }}" class="row g-3 align-items-end">
                 <div class="col-md-4">
@@ -126,12 +139,6 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <style>
-                    /* Torna a linha clicável visualmente */
-                    .clickable-row { cursor: pointer; transition: background-color 0.2s; }
-                    .clickable-row:hover { background-color: rgba(52, 152, 219, 0.05) !important; }
-                </style>
-
                 <table class="table table-hover mb-0 align-middle">
                     <thead>
                         <tr>
@@ -144,7 +151,7 @@
                     </thead>
                     <tbody>
                         {% for imp in impressoras %}
-                        <tr class="clickable-row" onclick="abrirHistorico('{{ imp.id }}')">
+                        <tr class="clickable-row" onclick="abrirHistorico('{{ imp.id }}', '{{ imp.status }}')">
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">{{ imp.modelo }}</div>
                                 <div class="text-muted small">
@@ -169,13 +176,11 @@
                                             title="Movimentar">
                                         <i class="fas fa-exchange-alt"></i>
                                     </button>
-                                    
                                     <button class="btn btn-sm btn-outline-primary" 
                                             onclick="event.stopPropagation(); abrirEdicao('{{ imp.id }}', '{{ imp.marca }}', '{{ imp.modelo }}', '{{ imp.serial }}', '{{ imp.mlt }}', '{{ imp.observacao }}')" 
                                             title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    
                                     <a href="{{ url_for('excluir_impressora', id=imp.id) }}" 
                                        class="btn btn-sm btn-outline-danger" 
                                        onclick="event.stopPropagation(); return confirm('Excluir esta impressora?')" 
@@ -193,8 +198,6 @@
             </div>
         </div>
     </div>
-
-
 </div>
 
 <div class="modal fade" id="modalNovaImpressora" tabindex="-1">
@@ -225,7 +228,7 @@
                                 </div>
                                 <div class="col-md-8">
                                     <label class="form-label small fw-bold text-muted">Modelo</label>
-                                    <input type="text" class="form-control" name="modelo" placeholder="Ex: M420dn (O sistema salvará como 'Brother M420dn')" required>
+                                    <input type="text" class="form-control" name="modelo" placeholder="Ex: M420dn" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold text-muted">Serial Number (S/N)</label>
@@ -236,8 +239,8 @@
                                     <input type="number" class="form-control" name="contador" value="0">
                                 </div>
                                 <div class="col-md-12">
-                                    <label class="form-label small fw-bold text-muted">Tecnologia / MLT</label>
-                                    <input type="text" class="form-control" name="mlt" placeholder="Ex: Laser Mono, MLT-D111S, etc...">
+                                    <label class="form-label small fw-bold text-muted">MLT</label>
+                                    <input type="text" class="form-control" name="mlt" placeholder="MLT da impressora">
                                 </div>
                             </div>
                         </div>
@@ -298,8 +301,8 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Observação / Motivo</label>
-                        <textarea class="form-control" name="observacao" rows="2" placeholder="Motivo da manutenção ou obs de locação..."></textarea>
+                        <label class="form-label small fw-bold">Observação</label>
+                        <textarea class="form-control" name="observacao" rows="2" placeholder="Motivo..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -309,7 +312,6 @@
         </div>
     </div>
 </div>
-
 
 <div class="modal fade" id="modalEditarImpressora" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -337,7 +339,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-8">
-                                    <label class="form-label small fw-bold text-muted">Modelo (Sem a marca)</label>
+                                    <label class="form-label small fw-bold text-muted">Modelo</label>
                                     <input type="text" class="form-control" name="modelo" id="edit_modelo" required>
                                 </div>
                                 <div class="col-md-6"><label class="form-label small fw-bold text-muted">Serial</label><input type="text" class="form-control" name="serial" id="edit_serial"></div>
@@ -356,112 +358,84 @@
 <div class="modal fade" id="modalHistorico" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-white border-bottom pb-0">
+            <div class="modal-header border-bottom">
                 <div>
-                    <h5 class="modal-title fw-bold text-dark" id="hist_titulo_modal">Histórico do Equipamento</h5>
-                    <p class="text-muted small mb-2">Visão completa do ciclo de vida</p>
+                    <h5 class="modal-title fw-bold"><i class="fas fa-history me-2"></i>Histórico do Equipamento</h5>
+                    <div id="hist_badges" class="mt-1"></div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             
-            <div class="bg-white px-3">
+            <div class="px-3 pt-3 border-bottom">
                 <ul class="nav nav-tabs nav-justified" id="histTabs" role="tablist">
                     <li class="nav-item">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-mov" type="button">
-                            <i class="fas fa-exchange-alt me-2 text-primary"></i>Movimentações
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-mov">
+                            <i class="fas fa-route me-2"></i>Ciclo de Vida
                         </button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-manut" type="button">
-                            <i class="fas fa-tools me-2 text-danger"></i>Manutenções (O.S.)
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-manut">
+                            <i class="fas fa-tools me-2"></i>Manutenções
                         </button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-insumos" type="button">
-                            <i class="fas fa-box-open me-2 text-success"></i>Insumos Enviados
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-insumos">
+                            <i class="fas fa-box-open me-2"></i>Insumos
                         </button>
                     </li>
                 </ul>
             </div>
 
-            <div class="modal-body bg-light p-3">
+            <div class="modal-body p-4">
                 <div class="tab-content">
-                    
                     <div class="tab-pane fade show active" id="tab-mov">
-                        <ul class="list-group list-group-flush rounded shadow-sm" id="lista_movimentacoes">
-                            </ul>
+                        <div id="timeline_container" class="timeline"></div>
                     </div>
 
                     <div class="tab-pane fade" id="tab-manut">
-                        
-                        <div class="card border-warning mb-3 shadow-sm">
-                            <div class="card-header bg-warning bg-opacity-10 border-warning d-flex justify-content-between align-items-center">
-                                <span class="fw-bold text-dark"><i class="fas fa-plus-circle me-1"></i> Adicionar Registro na O.S.</span>
-                                <button class="btn btn-sm btn-light text-dark border" type="button" data-bs-toggle="collapse" data-bs-target="#formLogManutencao">
-                                    Expandir
-                                </button>
-                            </div>
-                            <div class="collapse show" id="formLogManutencao">
-                                <div class="card-body bg-white">
-                                    <form action="{{ url_for('adicionar_log_manutencao') }}" method="POST">
-                                        <input type="hidden" name="impressora_id" id="hist_form_imp_id">
-                                        <input type="hidden" name="manutencao_id" id="hist_form_manut_id"> <div class="row g-2">
-                                            <div class="col-md-4">
-                                                <label class="small fw-bold text-muted">Ação / Título</label>
-                                                <select class="form-select form-select-sm" name="status_detalhe">
-                                                    <option value="Diagnóstico Técnico">Diagnóstico Técnico</option>
-                                                    <option value="Troca de Peça">Troca de Peça</option>
-                                                    <option value="Limpeza">Limpeza</option>
-                                                    <option value="Aguardando Peça">Aguardando Peça</option>
-                                                    <option value="Teste Final">Teste Final</option>
-                                                    <option value="Observação">Observação Geral</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-8">
-                                                <label class="small fw-bold text-muted">Descrição</label>
-                                                <input type="text" class="form-control form-control-sm" name="observacao" placeholder="Ex: Trocado rolete de fusão..." required>
-                                            </div>
-                                            <div class="col-12 text-end mt-2">
-                                                <button type="submit" class="btn btn-sm btn-warning text-dark fw-bold">
-                                                    <i class="fas fa-save me-1"></i> Salvar no Histórico
-                                                </button>
+                        <div id="area_adicionar_log" style="display: none;">
+                            <div class="os-log-box shadow-sm">
+                                <h6 class="fw-bold text-warning mb-3"><i class="fas fa-pen-square me-2"></i>Atualizar O.S. em Andamento</h6>
+                                <form action="{{ url_for('adicionar_log_manutencao') }}" method="POST">
+                                    <input type="hidden" name="impressora_id" id="hist_form_imp_id">
+                                    <div class="row g-2">
+                                        <div class="col-md-4">
+                                            <select class="form-select form-select-sm" name="status_detalhe">
+                                                <option value="Diagnóstico Técnico">Diagnóstico Técnico</option>
+                                                <option value="Troca de Peça">Troca de Peça</option>
+                                                <option value="Limpeza">Limpeza</option>
+                                                <option value="Aguardando Peça">Aguardando Peça</option>
+                                                <option value="Teste Final">Teste Final</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control" name="observacao" placeholder="Descreva o procedimento..." required>
+                                                <button class="btn btn-warning fw-bold" type="submit">Salvar</button>
                                             </div>
                                         </div>
-                                    </form>
-                                </div>
+                                    </div>
+                                </form>
                             </div>
                         </div>
-
-                        <div class="accordion shadow-sm" id="accordionManutencoes">
-                            </div>
+                        <div class="accordion shadow-sm" id="accordionManutencoes"></div>
                     </div>
 
                     <div class="tab-pane fade" id="tab-insumos">
-                        <div class="card border-0 shadow-sm">
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0 small align-middle">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th class="ps-3">Data</th>
-                                            <th>Item Enviado</th>
-                                            <th class="text-center">Qtd</th>
-                                            <th class="text-end pe-3">Pedido</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tabelaInsumosImpressora">
-                                        </tbody>
-                                </table>
-                            </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr><th>Data</th><th>Produto</th><th class="text-center">Qtd</th><th class="text-end">Ref.</th></tr>
+                                </thead>
+                                <tbody id="tabelaInsumosImpressora"></tbody>
+                            </table>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-
 {% endblock %}
 
 {% block scripts %}
@@ -476,188 +450,157 @@
         modalNova.show();
     }
 
-  function abrirMovimentacao(id, modelo, contador, statusAtual) {
+    function abrirMovimentacao(id, modelo, contador, statusAtual) {
         document.getElementById('mov_id').value = id;
         document.getElementById('mov_titulo').innerText = modelo;
         document.getElementById('mov_contador').value = contador;
         
         var select = document.getElementById('selectTipoMov');
         
-        // Lógica automática para facilitar
-        if(statusAtual === 'Disponível') {
-            // Se está no estoque, sugere Locação, mas permite Manutenção
-            select.value = 'Locação'; 
-        } else if(statusAtual === 'Locada') {
-            // Se está no cliente, sugere Devolução
-            select.value = 'Devolução';
-        } else if(statusAtual === 'Manutenção') {
-            // Se está em manutenção, sugere Finalizar (Disponibilizar)
-            select.value = 'Disponibilizar';
-        }
+        // Seleção Inteligente
+        if(statusAtual === 'Disponível') select.value = 'Locação'; 
+        else if(statusAtual === 'Locada') select.value = 'Devolução';
+        else if(statusAtual === 'Manutenção') select.value = 'Disponibilizar';
         
-        toggleClienteMov(); // Ajusta visibilidade do cliente
+        toggleClienteMov();
         modalMov.show();
     }
 
     function toggleClienteMov() {
         var tipo = document.getElementById('selectTipoMov').value;
         var div = document.getElementById('divClienteMov');
-        
-        // Só mostra o campo Cliente se for LOCAÇÃO
         if (tipo === 'Locação') {
             div.style.display = 'block';
-            // Adiciona required para evitar erro
             div.querySelector('select').setAttribute('required', 'required');
         } else {
             div.style.display = 'none';
-            // Remove required para não travar o formulário
             div.querySelector('select').removeAttribute('required');
         }
     }
 
-
     function abrirEdicao(id, marca, modeloFull, serial, mlt, obs) {
         document.getElementById('edit_imp_id').value = id;
-        
-        // Tenta separar a marca do modelo se o modeloFull vier como "Brother M420dn"
-        // Se a marca já estiver correta no banco, usamos ela.
         document.getElementById('edit_marca').value = marca;
-        
-        // Remove a marca do texto do modelo para exibição limpa no input
         let modeloLimpo = modeloFull.replace(marca, '').trim();
         document.getElementById('edit_modelo').value = modeloLimpo;
-        
         document.getElementById('edit_serial').value = serial;
         document.getElementById('edit_mlt').value = mlt;
         document.getElementById('edit_obs').value = obs;
         modalEdit.show();
     }
 
-function abrirHistorico(id) {
-        // Prepara IDs para o formulário de log
+    function abrirHistorico(id, statusAtual) {
+        // Configura Formulário de O.S. (Só aparece se Manutenção)
         document.getElementById('hist_form_imp_id').value = id;
-        document.getElementById('hist_form_manut_id').value = ""; // Reseta, deixa o backend buscar a aberta
-        
-        // Elementos da UI
-        var listaMov = document.getElementById('lista_movimentacoes');
+        var divForm = document.getElementById('area_adicionar_log');
+        var badgeContainer = document.getElementById('hist_badges');
+
+        if (statusAtual === 'Manutenção') {
+            divForm.style.display = 'block';
+            badgeContainer.innerHTML = '<span class="badge bg-danger">EM MANUTENÇÃO</span>';
+        } else {
+            divForm.style.display = 'none';
+            if(statusAtual === 'Locada') badgeContainer.innerHTML = '<span class="badge bg-warning text-dark">LOCADA</span>';
+            else badgeContainer.innerHTML = '<span class="badge bg-success">DISPONÍVEL</span>';
+        }
+
+        var timeline = document.getElementById('timeline_container');
         var listaManut = document.getElementById('accordionManutencoes');
         var listaInsumos = document.getElementById('tabelaInsumosImpressora');
         
-        // Loading State
-        listaMov.innerHTML = '<li class="list-group-item text-center p-4"><div class="spinner-border text-primary"></div></li>';
+        timeline.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary"></div></div>';
         listaManut.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-danger"></div></div>';
-        listaInsumos.innerHTML = '<tr><td colspan="4" class="text-center p-4"><div class="spinner-border text-success"></div></td></tr>';
         
         modalHist.show();
 
-        // Fetch Completo
         fetch('/api/historico_completo/' + id)
             .then(response => response.json())
             .then(data => {
-                // 1. Preencher Movimentações
-                listaMov.innerHTML = '';
+                // 1. Timeline
+                timeline.innerHTML = '';
                 if (!data.movimentacoes || data.movimentacoes.length === 0) {
-                    listaMov.innerHTML = '<li class="list-group-item text-center text-muted">Sem movimentações registradas.</li>';
+                    timeline.innerHTML = '<div class="text-muted fst-italic ms-3">Sem registros.</div>';
                 } else {
                     data.movimentacoes.forEach(m => {
+                        let borderClass = '#007bff';
+                        if(m.tipo.includes('Manutenção')) borderClass = '#dc3545';
+                        if(m.tipo.includes('Locação')) borderClass = '#ffc107';
+                        if(m.tipo.includes('Devolução')) borderClass = '#28a745';
+
                         let html = `
-                            <li class="list-group-item">
-                                <div class="d-flex justify-content-between">
-                                    <span class="fw-bold text-primary">${m.tipo}</span>
-                                    <small class="text-muted">${m.data}</small>
+                            <div class="timeline-item">
+                                <div class="timeline-marker" style="border-color: ${borderClass}"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-date">${m.data}</div>
+                                    <div class="timeline-title">${m.tipo}</div>
+                                    <div class="text-muted small">
+                                        ${m.origem} <i class="fas fa-arrow-right mx-1"></i> <strong>${m.destino}</strong>
+                                    </div>
+                                    ${m.obs ? `<div class="text-muted small fst-italic mt-1">${m.obs}</div>` : ''}
                                 </div>
-                                <div class="small mt-1">
-                                    <i class="fas fa-map-marker-alt text-muted me-1"></i> ${m.origem} &rarr; <strong>${m.destino}</strong>
-                                </div>
-                                ${m.obs ? `<div class="small text-muted fst-italic mt-1 border-top pt-1">${m.obs}</div>` : ''}
-                            </li>
-                        `;
-                        listaMov.innerHTML += html;
+                            </div>`;
+                        timeline.innerHTML += html;
                     });
                 }
 
-                // 2. Preencher Manutenções (Accordion)
+                // 2. Manutenções
                 listaManut.innerHTML = '';
                 if (!data.manutencoes || data.manutencoes.length === 0) {
-                    listaManut.innerHTML = '<div class="alert alert-light text-center border">Nenhuma Ordem de Serviço encontrada.</div>';
+                    listaManut.innerHTML = '<div class="alert alert-light border text-center">Nenhum histórico de O.S.</div>';
                 } else {
                     data.manutencoes.forEach((os, index) => {
-                        let isOpen = os.status === 'Aberta';
-                        let badge = isOpen ? '<span class="badge bg-warning text-dark">ABERTA</span>' : '<span class="badge bg-secondary">FECHADA</span>';
-                        let borderClass = isOpen ? 'border-warning' : '';
-                        let collapseShow = index === 0 ? 'show' : ''; // Abre a primeira (mais recente)
+                        let badge = os.status === 'Aberta' ? '<span class="badge bg-warning text-dark">ABERTA</span>' : '<span class="badge bg-secondary">FECHADA</span>';
+                        let collapseShow = index === 0 ? 'show' : ''; 
                         
-                        // Renderiza os logs internos da OS
-                        let logsHtml = '<ul class="list-unstyled mb-0 small">';
+                        let logsHtml = '<ul class="list-group list-group-flush small mb-3">';
                         if(os.logs && os.logs.length > 0) {
                             os.logs.forEach(log => {
-                                logsHtml += `
-                                    <li class="mb-2 border-bottom pb-2">
-                                        <div class="d-flex justify-content-between">
-                                            <strong class="text-dark">${log.titulo}</strong>
-                                            <span class="text-muted" style="font-size:0.75rem">${log.data}</span>
-                                        </div>
-                                        <div class="text-muted">${log.obs}</div>
-                                    </li>
-                                `;
+                                logsHtml += `<li class="list-group-item bg-transparent px-0 border-bottom-0 pb-1">
+                                    <span class="fw-bold text-primary">${log.titulo}</span>: ${log.obs}
+                                    <br><span class="text-muted" style="font-size:0.75rem">${log.data}</span></li>`;
                             });
                         } else {
-                            logsHtml += '<li class="text-muted fst-italic">Sem registros técnicos.</li>';
+                            logsHtml += '<li class="list-group-item bg-transparent px-0 text-muted fst-italic">Sem detalhes técnicos.</li>';
                         }
                         logsHtml += '</ul>';
 
                         let itemHtml = `
-                            <div class="accordion-item ${borderClass}">
+                            <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button ${index !== 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#osCollapse${index}">
                                         <div class="d-flex w-100 justify-content-between me-3 align-items-center">
-                                            <span><strong>O.S. #${os.numero}</strong> <span class="ms-2 text-muted" style="font-size:0.8rem">(${os.inicio})</span></span>
+                                            <span><strong>O.S. #${os.numero}</strong> <span class="text-muted ms-2 small">(${os.inicio})</span></span>
                                             ${badge}
                                         </div>
                                     </button>
                                 </h2>
                                 <div id="osCollapse${index}" class="accordion-collapse collapse ${collapseShow}" data-bs-parent="#accordionManutencoes">
-                                    <div class="accordion-body bg-light">
-                                        <div class="mb-2"><strong>Motivo Inicial:</strong> ${os.motivo}</div>
-                                        <div class="card card-body border-0 shadow-sm">
-                                            <h6 class="text-muted border-bottom pb-2 mb-2 text-uppercase" style="font-size:0.7rem">Histórico Técnico</h6>
-                                            ${logsHtml}
-                                        </div>
-                                        ${os.fim ? `<div class="mt-2 text-end small fw-bold text-success">Encerrada em: ${os.fim}</div>` : ''}
+                                    <div class="accordion-body">
+                                        <div class="alert alert-light border small mb-3"><strong>Motivo:</strong> ${os.motivo}</div>
+                                        ${logsHtml}
+                                        ${os.fim ? `<div class="text-end small fw-bold text-success mt-2 pt-2 border-top">Fim: ${os.fim}</div>` : ''}
                                     </div>
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                         listaManut.innerHTML += itemHtml;
                     });
                 }
 
-                // 3. Preencher Insumos
+                // 3. Insumos
                 listaInsumos.innerHTML = '';
                 if (!data.insumos || data.insumos.length === 0) {
-                    listaInsumos.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">Nenhum insumo enviado para esta máquina.</td></tr>';
+                    listaInsumos.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-3">Nenhum insumo enviado.</td></tr>';
                 } else {
                     data.insumos.forEach(i => {
-                        listaInsumos.innerHTML += `
-                            <tr>
-                                <td class="ps-3 text-muted">${i.data}</td>
-                                <td>
-                                    <div class="fw-bold text-dark">${i.produto}</div>
-                                    <small class="text-muted">${i.marca}</small>
-                                </td>
-                                <td class="text-center fw-bold text-primary">${i.qtd}</td>
-                                <td class="text-end pe-3 small text-muted">#${i.pedido}</td>
-                            </tr>
-                        `;
+                        listaInsumos.innerHTML += `<tr>
+                            <td class="text-muted">${i.data}</td>
+                            <td class="fw-bold">${i.produto}</td>
+                            <td class="text-center text-primary fw-bold">${i.qtd}</td>
+                            <td class="text-end text-muted small">Pedido #${i.pedido}</td></tr>`;
                     });
                 }
             })
-            .catch(err => {
-                console.error(err);
-                listaMov.innerHTML = '<div class="alert alert-danger m-3">Erro ao carregar dados.</div>';
-            });
+            .catch(err => { console.error(err); timeline.innerHTML = '<div class="text-danger p-3">Erro ao carregar.</div>'; });
     }
-
-
 </script>
 {% endblock %}
