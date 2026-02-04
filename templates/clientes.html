@@ -2,49 +2,88 @@
 
 {% block content %}
 <style>
-    /* --- Padrão Visual (Igual Vendas) --- */
+    /* --- PADRÃO VISUAL (ADAPTÁVEL) --- */
     
-    /* Título Específico conforme solicitado */
+    /* Título */
     .page-title { 
-        color: #2C3E50 !important; 
-        font-family: 'Segoe UI', sans-serif; 
+        color: var(--text-main) !important; 
+        font-family: 'Inter', sans-serif; 
         font-weight: 700; 
         margin-bottom: 5px; 
     }
     
-    /* Filtros e Cards Clean */
-    .filter-bar { background-color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-    .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 8px; }
+    /* Filtros e Cards */
+    .filter-bar { 
+        background-color: var(--card-bg) !important; 
+        padding: 15px; 
+        border-radius: 8px; 
+        margin-bottom: 20px; 
+        border: 1px solid var(--border-color); 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02); 
+    }
     
-    /* Tabela Minimalista */
+    .card { 
+        background-color: var(--card-bg) !important;
+        border: none; 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+        border-radius: 8px; 
+    }
+    
+    .card-header {
+        background-color: var(--card-bg) !important;
+        border-bottom: 1px solid var(--border-color);
+        padding: 15px 20px;
+    }
+
+    .card-title {
+        color: var(--text-main) !important;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    /* Tabela Minimalista Adaptável */
     .table thead th { 
-        background-color: #f8f9fa; 
-        color: #6c757d; 
+        background-color: transparent !important; 
+        color: var(--text-muted) !important; 
         font-weight: 600; 
         font-size: 0.85rem; 
-        border-bottom: 2px solid #e9ecef; 
+        border-bottom: 2px solid var(--border-color); 
         border-top: none;
         padding: 12px 15px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
+    
     .table tbody td { 
         vertical-align: middle; 
-        color: #495057; 
+        color: var(--text-main) !important; 
         font-size: 0.9rem; 
         padding: 12px 15px; 
-        border-bottom: 1px solid #f5f5f5;
+        border-bottom: 1px solid var(--border-color);
+        background-color: transparent !important;
     }
-    .table-hover tbody tr:hover { background-color: #fafafa; }
+    
+    .table-hover tbody tr:hover { 
+        background-color: rgba(128, 128, 128, 0.05) !important; 
+    }
 
     /* Badges Pill */
     .badge-pill { padding: 5px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.3px; }
-    .badge-soft-primary { background-color: rgba(52, 152, 219, 0.1); color: #2980b9; border: 1px solid rgba(52, 152, 219, 0.2); }
-    .badge-soft-dark { background-color: rgba(52, 73, 94, 0.1); color: #2c3e50; border: 1px solid rgba(52, 73, 94, 0.2); }
+    .badge-soft-primary { background-color: rgba(52, 152, 219, 0.1); color: #3498db; border: 1px solid rgba(52, 152, 219, 0.2); }
+    .badge-soft-dark { background-color: rgba(100, 116, 139, 0.1); color: var(--text-muted); border: 1px solid var(--border-color); }
 
-    /* Modal Clean */
-    .section-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #adb5bd; margin-bottom: 8px; display: block; letter-spacing: 0.5px; }
-    .input-group-text { background-color: #f8f9fa; color: #6c757d; border: 1px solid #ced4da; }
+    /* Modal e Inputs */
+    .section-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; display: block; letter-spacing: 0.5px; }
+    
+    .input-group-text { 
+        background-color: var(--card-bg); 
+        color: var(--text-muted); 
+        border-color: var(--border-color); 
+    }
+    
+    /* Utilitários de Texto */
+    .text-muted { color: var(--text-muted) !important; }
+    .fw-bold { color: var(--text-main) !important; }
 </style>
 
 <div id="clientes-page" class="page-content active">
@@ -52,7 +91,7 @@
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 <h1 class="page-title">Clientes</h1>
-                <p class="page-subtitle mb-0">Gestão da carteira de clientes</p>
+                <p class="text-muted mb-0 small">Gestão da carteira de clientes</p>
             </div>
             <div>
                 <button class="btn btn-primary btn-action shadow-sm" onclick="abrirModalCliente()">
@@ -85,8 +124,8 @@
     </div>
 
     <div class="card">
-        <div class="card-header bg-white">
-            <h5 class="card-title mb-0" style="color: #2C3E50; font-family: 'Segoe UI'; font-weight: 600;">Lista de Clientes</h5>
+        <div class="card-header">
+            <h5 class="card-title mb-0">Lista de Clientes</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -105,7 +144,7 @@
                         {% for cliente in clientes %}
                         <tr>
                             <td class="ps-4">
-                                <div class="fw-bold" style="color: #2C3E50;">{{ cliente.nome }}</div>
+                                <div class="fw-bold">{{ cliente.nome }}</div>
                                 {% if cliente.observacao %}
                                     <small class="text-muted d-block text-truncate" style="max-width: 250px;">
                                         <i class="fas fa-info-circle me-1 small"></i> {{ cliente.observacao }}
@@ -180,14 +219,14 @@
 <div class="modal fade" id="modalCliente" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-light border-bottom">
-                <h5 class="modal-title" style="color: #2C3E50; font-weight: 600;" id="tituloModal">Novo Cliente</h5>
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title" id="tituloModal">Novo Cliente</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ url_for('salvar_cliente') }}" method="POST">
                 <input type="hidden" name="cliente_id" id="cliente_id">
                 
-                <div class="modal-body bg-light">
+                <div class="modal-body">
                     
                     <div class="card border-0 shadow-sm mb-3">
                         <div class="card-body">
@@ -245,13 +284,13 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body">
                             <span class="section-label">Observações</span>
-                            <textarea class="form-control border-0 bg-light" name="observacao" id="observacao" rows="2" placeholder="Informações adicionais..."></textarea>
+                            <textarea class="form-control" name="observacao" id="observacao" rows="2" placeholder="Informações adicionais..."></textarea>
                         </div>
                     </div>
 
                 </div>
-                <div class="modal-footer bg-light border-top-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary px-4">Salvar Cliente</button>
                 </div>
             </form>

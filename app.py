@@ -277,6 +277,238 @@ def registrar_hist_contrato(contrato_id, acao, detalhes, usuario='Sistema'):
     except Exception as e:
         print(f"Erro ao gravar historico contrato: {e}")
 
+
+
+# --- NOVOS MODELS FINANCEIROS ---
+class Banco(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome_banco = db.Column(db.String(100), nullable=False)
+    agencia_conta = db.Column(db.String(100))
+    saldo_inicial = db.Column(db.Float, default=0.0)
+    saldo_atual = db.Column(db.Float, default=0.0)
+    lancamentos = db.relationship('LancamentoFinanceiro', backref='banco', lazy=True)
+
+class LancamentoFinanceiro(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    descricao = db.Column(db.String(200), nullable=False)
+    tipo = db.Column(db.String(20)) # 'Receita' ou 'Despesa'
+    categoria_custo = db.Column(db.String(20)) # 'Fixo' ou 'Variavel'
+    valor = db.Column(db.Float, nullable=False)
+    data_vencimento = db.Column(db.Date)
+    data_pagamento = db.Column(db.Date) # Se null, está pendente
+    pago = db.Column(db.Boolean, default=False)
+    banco_id = db.Column(db.Integer, db.ForeignKey('banco.id'), nullable=True)
+
+
+
+
+  # --- ROTAS FINANCEIRAS ---
+
+@app.route('/financeiro')
+def financeiro():
+    # 1. Configurações Básicas
+    hoje = datetime.now()
+    primeiro_dia_mes = hoje.replace(day=1)
+    # Lógica simples para pegar ultimo dia do mes
+    proximo_mes = hoje.replace(day=28) + timedelta(days=4)
+    ultimo_dia_mes = proximo_mes - timedelta(days=proximo_mes.day)
+
+    # 2. Filtros e Dados Gerais
+    bancos = Banco.query.all()
+    saldo_bancos_total = sum(b.saldo_atual for b in bancos)
+    
+    # 3. Dashboard: Totais do Mês (Confirmados)
+    movs_mes = LancamentoFinanceiro.query.filter(
+        LancamentoFinanceiro.data_pagamento >= primeiro_dia_mes,
+        LancamentoFinanceiro.data_pagamento <= ultimo_dia_mes,
+        LancamentoFinanceiro.pago == True
+    ).all()
+    
+    total_receitas_mes = sum(l.valor for l in movs_mes if l.tipo == 'Receita')
+    total_despesas_mes = sum(l.valor for l in movs_mes if l.tipo == 'Despesa')
+    
+    # 4. Situação do Dia (Saldo Hoje)
+    # Pega tudo que foi pago HOJE
+    movs_hoje = LancamentoFinanceiro.query.filter(
+        extract('day', LancamentoFinanceiro.data_pagamento) == hoje.day,
+        extract('month', LancamentoFinanceiro.data_pagamento) == hoje.month,
+        extract('year', LancamentoFinanceiro.data_pagamento) == hoje.year,
+        LancamentoFinanceiro.pago == True
+    ).all()
+    rec_hoje = sum(l.valor for l in movs_hoje if l.tipo == 'Receita')
+    desp_hoje = sum(l.valor for l in movs_hoje if l.tipo == 'Despesa')
+    saldo_dia_hoje = rec_hoje - desp_hoje # Positivo ou Negativo
+
+    # 5. Previsão Fim de Mês
+    # Pega pendentes até o fim do mês
+    pendentes = LancamentoFinanceiro.query.filter(
+        LancamentoFinanceiro.data_vencimento <= ultimo_dia_mes,
+        LancamentoFinanceiro.pago == False
+    ).all()
+    pendente_receita = sum(l.valor for l in pendentes if l.tipo == 'Receita')
+    pendente_despesa = sum(l.valor for l in pendentes if l.tipo == 'Despesa')
+    
+    saldo_projetado = saldo_bancos_total + pendente_receita - pendente_despesa
+
+    # 6. Relatório Filtrado (Fixo/Variavel)
+    filtro_tipo = request.args.get('filtro_tipo_custo', 'Todos')
+    query_rel = LancamentoFinanceiro.query.filter(LancamentoFinanceiro.tipo == 'Despesa')
+    if filtro_tipo != 'Todos':
+        query_rel = query_rel.filter(LancamentoFinanceiro.categoria_custo == filtro_tipo)
+    relatorio_despesas = query_rel.order_by(LancamentoFinanceiro.data_vencimento).limit(50).all()
+
+    # 7. Lógica de Fluxo de Caixa (Conciliação)
+    fc_banco_id = request.args.get('fc_banco_id')
+    fc_banco_selecionado = int(fc_banco_id) if fc_banco_id else (bancos[0].id if bancos else None)
+    fc_data_ini = request.args.get('fc_data_ini', primeiro_dia_mes.strftime('%Y-%m-%d'))
+    fc_data_fim = request.args.get('fc_data_fim', ultimo_dia_mes.strftime('%Y-%m-%d'))
+    
+    fc_extrato = []
+    fc_banco_obj = None
+    fc_saldo_anterior = 0
+    fc_total_receitas = 0
+    fc_total_despesas = 0
+
+    if fc_banco_selecionado:
+        fc_banco_obj = Banco.query.get(fc_banco_selecionado)
+        
+        # Extrato do Período
+        d_ini = datetime.strptime(fc_data_ini, '%Y-%m-%d')
+        d_fim = datetime.strptime(fc_data_fim, '%Y-%m-%d')
+        
+        fc_extrato = LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.banco_id == fc_banco_selecionado,
+            LancamentoFinanceiro.pago == True,
+            LancamentoFinanceiro.data_pagamento >= d_ini,
+            LancamentoFinanceiro.data_pagamento <= d_fim
+        ).order_by(LancamentoFinanceiro.data_pagamento).all()
+        
+        # Totais do período
+        fc_total_receitas = sum(l.valor for l in fc_extrato if l.tipo == 'Receita')
+        fc_total_despesas = sum(l.valor for l in fc_extrato if l.tipo == 'Despesa')
+        
+        # Cálculo aproximado do saldo anterior (Backwards calculation)
+        # Saldo Anterior = Saldo Atual - (Receitas Período - Despesas Período) - (Movs Futuras...)
+        # Simplificação: Para conciliação exata, o ideal é ter tabela de fechamento diário.
+        # Aqui usaremos a lógica: Saldo Anterior = (Saldo Atual) - (Tudo que aconteceu DEPOIS da data ini)
+        # Mas para simplificar a visualização imediata pedida:
+        fc_saldo_anterior = fc_banco_obj.saldo_atual - (fc_total_receitas - fc_total_despesas)
+
+    return render_template('financeiro.html',
+                           hoje=hoje,
+                           bancos=bancos,
+                           saldo_bancos_total=saldo_bancos_total,
+                           total_receitas_mes=total_receitas_mes,
+                           total_despesas_mes=total_despesas_mes,
+                           saldo_dia_hoje=saldo_dia_hoje,
+                           pendente_receita=pendente_receita,
+                           pendente_despesa=pendente_despesa,
+                           saldo_projetado=saldo_projetado,
+                           relatorio_despesas=relatorio_despesas,
+                           filtro_tipo_custo=filtro_tipo,
+                           lancamentos_todos=LancamentoFinanceiro.query.order_by(LancamentoFinanceiro.data_vencimento.desc()).limit(20).all(),
+                           fc_banco_selecionado=fc_banco_selecionado,
+                           fc_banco_obj=fc_banco_obj,
+                           fc_data_ini=fc_data_ini,
+                           fc_data_fim=fc_data_fim,
+                           fc_extrato=fc_extrato,
+                           fc_saldo_anterior=fc_saldo_anterior,
+                           fc_total_receitas=fc_total_receitas,
+                           fc_total_despesas=fc_total_despesas)
+
+@app.route('/criar_banco', methods=['POST'])
+def criar_banco():
+    nome = request.form.get('nome_banco')
+    agencia = request.form.get('agencia_conta')
+    saldo_ini = limpar_float(request.form.get('saldo_inicial'))
+    
+    novo = Banco(nome_banco=nome, agencia_conta=agencia, saldo_inicial=saldo_ini, saldo_atual=saldo_ini)
+    db.session.add(novo)
+    db.session.commit()
+    flash('Banco cadastrado com sucesso.')
+    return redirect(url_for('financeiro', tab_ativa='tab-bancos'))
+
+@app.route('/novo_lancamento', methods=['POST'])
+def novo_lancamento():
+    try:
+        desc = request.form.get('descricao')
+        tipo = request.form.get('tipo')
+        cat = request.form.get('categoria_custo')
+        valor = limpar_float(request.form.get('valor'))
+        banco_id = int(request.form.get('banco_id'))
+        venc = datetime.strptime(request.form.get('data_vencimento'), '%Y-%m-%d')
+        status = request.form.get('status')
+        
+        pago = (status == 'Pago')
+        data_pgto = datetime.now() if pago else None
+        
+        novo = LancamentoFinanceiro(descricao=desc, tipo=tipo, categoria_custo=cat, valor=valor, 
+                                    data_vencimento=venc, banco_id=banco_id, pago=pago, data_pagamento=data_pgto)
+        
+        if pago:
+            banco = Banco.query.get(banco_id)
+            if tipo == 'Receita': banco.saldo_atual += valor
+            else: banco.saldo_atual -= valor
+            
+        db.session.add(novo)
+        db.session.commit()
+        flash('Lançamento registrado.')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro: {e}')
+    return redirect(url_for('financeiro'))
+
+@app.route('/baixa_lancamento', methods=['POST'])
+def baixa_lancamento():
+    id_lanc = request.form.get('id')
+    lanc = LancamentoFinanceiro.query.get(id_lanc)
+    if lanc and not lanc.pago:
+        lanc.pago = True
+        lanc.data_pagamento = datetime.now()
+        
+        banco = Banco.query.get(lanc.banco_id)
+        if lanc.tipo == 'Receita': banco.saldo_atual += lanc.valor
+        else: banco.saldo_atual -= lanc.valor
+        
+        db.session.commit()
+        flash('Baixa realizada com sucesso.')
+    return redirect(url_for('financeiro'))
+
+@app.route('/ajuste_saldo_banco', methods=['POST'])
+def ajuste_saldo_banco():
+    banco_id = request.form.get('banco_id')
+    novo_saldo = limpar_float(request.form.get('novo_saldo'))
+    justificativa = request.form.get('justificativa')
+    
+    banco = Banco.query.get(banco_id)
+    diferenca = novo_saldo - banco.saldo_atual
+    
+    if diferenca != 0:
+        tipo = 'Receita' if diferenca > 0 else 'Despesa'
+        valor_ajuste = abs(diferenca)
+        
+        # Cria um lançamento automático de ajuste
+        ajuste = LancamentoFinanceiro(
+            descricao=f"Ajuste Manual: {justificativa}",
+            tipo=tipo,
+            categoria_custo='Variavel',
+            valor=valor_ajuste,
+            data_vencimento=datetime.now(),
+            data_pagamento=datetime.now(),
+            pago=True,
+            banco_id=banco.id
+        )
+        banco.saldo_atual = novo_saldo
+        db.session.add(ajuste)
+        db.session.commit()
+        flash('Saldo ajustado com sucesso.')
+        
+    return redirect(url_for('financeiro', fc_banco_id=banco_id, tab_ativa='tab-caixa'))  
+
+
+
+
+
 # --- CONTEXTO ---
 @app.template_filter('currency')
 def currency_filter(value):
@@ -299,35 +531,109 @@ def utility_processor():
 
 # --- ROTAS ---
 
+# Certifique-se de ter importado isso no topo: 
+# from sqlalchemy import extract, func
+
 @app.route('/')
+@app.route('/index')
 def index():
-    total_itens = db.session.query(func.sum(Produto.quantidade)).scalar() or 0
-    config = Configuracao.query.first()
-    margem = config.margem_atencao_pct if config else 20
-    dias_vencimento = config.dias_alerta_vencimento if config else 7
-    todos_produtos = Produto.query.all()
-    itens_atencao = []
-    for p in todos_produtos:
-        if p.ativo: 
-            limite = p.minimo * (1 + margem / 100)
-            if p.quantidade <= p.minimo:
-                itens_atencao.append({'produto': p, 'status': 'Crítico', 'classe': 'bg-danger', 'row_class': 'row-alert-red'})
-            elif p.quantidade <= limite:
-                itens_atencao.append({'produto': p, 'status': 'Baixo', 'classe': 'bg-warning text-dark', 'row_class': 'row-alert-orange'})
-    itens_atencao.sort(key=lambda x: x['produto'].quantidade)
-    data_limite = datetime.now().date() + timedelta(days=dias_vencimento)
-    vendas_vencendo = Venda.query.filter(
-        Venda.status_pagamento != 'Pago', Venda.status_geral != 'Cancelada', Venda.data_vencimento <= data_limite
-    ).order_by(Venda.data_vencimento).all()
-    total_alertas = len(itens_atencao) + len(vendas_vencendo)
-    mes_atual = datetime.now().month
-    saidas_mes = db.session.query(func.sum(Movimentacao.quantidade)).filter(
-        Movimentacao.tipo.in_(['Saida_Locacao', 'Ajuste_Saida', 'Venda']), Movimentacao.status != 'Cancelado', extract('month', Movimentacao.data) == mes_atual
-    ).scalar() or 0
-    ultimas_entradas = Movimentacao.query.filter(Movimentacao.tipo == 'Entrada', Movimentacao.status != 'Cancelado').order_by(Movimentacao.data.desc()).limit(30).all()
-    ultimas_saidas = Movimentacao.query.filter(Movimentacao.tipo.in_(['Saida_Locacao', 'Venda', 'Ajuste_Saida']), Movimentacao.status != 'Cancelado').order_by(Movimentacao.data.desc()).limit(30).all()
-    total_contratos = Contrato.query.filter_by(status='Ativo').count()
-    return render_template('dashboard.html', total_itens=total_itens, saidas_mes=saidas_mes, total_alertas=total_alertas, itens_atencao=itens_atencao, vendas_vencendo=vendas_vencendo, ultimas_entradas=ultimas_entradas, ultimas_saidas=ultimas_saidas, total_contratos=total_contratos)
+    hoje = datetime.now()
+    primeiro_dia_mes = hoje.replace(day=1)
+    
+    # 1. KPIs Gerais (Mantidos)
+    vendas_mes = Venda.query.filter(Venda.data >= primeiro_dia_mes).all()
+    total_vendas_mes = sum(v.valor_total for v in vendas_mes)
+    
+    contratos_ativos = Contrato.query.filter_by(status='Ativo').all()
+    total_contratos_ativos = len(contratos_ativos)
+    total_contratos_valor = sum(c.valor_mensal_total for c in contratos_ativos)
+    
+    itens_alerta = Produto.query.filter(Produto.quantidade <= Produto.minimo).all()
+    total_itens_alerta = len(itens_alerta)
+    
+    # Pendências (Vendas vencidas pendentes)
+    vendas_atrasadas = Venda.query.filter(
+        Venda.status_pagamento == 'Pendente',
+        Venda.data_vencimento < hoje.date()
+    ).count()
+    total_alertas = total_itens_alerta + vendas_atrasadas
+
+    # 2. Dados para Gráfico Financeiro (Últimos 6 meses)
+    grafico_labels = []
+    grafico_receitas = []
+    grafico_despesas = []
+
+    for i in range(5, -1, -1):
+        data_ref = hoje - timedelta(days=i*30) 
+        mes = data_ref.month
+        ano = data_ref.year
+        grafico_labels.append(data_ref.strftime('%b'))
+
+        # Tenta pegar do financeiro real, fallback para zero
+        try:
+            rec = db.session.query(func.sum(LancamentoFinanceiro.valor)).filter(
+                extract('month', LancamentoFinanceiro.data_pagamento) == mes,
+                extract('year', LancamentoFinanceiro.data_pagamento) == ano,
+                LancamentoFinanceiro.tipo == 'Receita',
+                LancamentoFinanceiro.pago == True
+            ).scalar() or 0
+            
+            desp = db.session.query(func.sum(LancamentoFinanceiro.valor)).filter(
+                extract('month', LancamentoFinanceiro.data_pagamento) == mes,
+                extract('year', LancamentoFinanceiro.data_pagamento) == ano,
+                LancamentoFinanceiro.tipo == 'Despesa',
+                LancamentoFinanceiro.pago == True
+            ).scalar() or 0
+        except:
+            rec = 0
+            desp = 0
+        
+        grafico_receitas.append(rec)
+        grafico_despesas.append(desp)
+
+    # 3. Dados para Gráfico Pizza (Status Impressoras)
+    # Contagem por status
+    imp_disp = Impressora.query.filter_by(status='Disponível').count()
+    imp_loc = Impressora.query.filter(or_(Impressora.status=='Locada', Impressora.status=='Em Cliente')).count()
+    imp_manut = Impressora.query.filter_by(status='Manutenção').count()
+    
+    status_impressoras = {
+        'Disponivel': imp_disp,
+        'Locada': imp_loc,
+        'Manutencao': imp_manut
+    }
+
+    # 4. TABELA 1: Vencimentos Próximos (Financeiro)
+    # Pega vendas pendentes que vencem nos próximos 15 dias ou já venceram
+    data_limite = hoje.date() + timedelta(days=15)
+    lista_vencimentos = Venda.query.filter(
+        Venda.status_pagamento == 'Pendente',
+        Venda.data_vencimento <= data_limite
+    ).order_by(Venda.data_vencimento).limit(5).all()
+
+    # 5. TABELA 2: Movimentações Estoque (Entrada/Saída Itens)
+    # Pega da tabela Movimentacao (Produtos)
+    lista_mov_estoque = Movimentacao.query.order_by(Movimentacao.data.desc()).limit(7).all()
+
+    # 6. TABELA 3: Movimentações Impressoras
+    # Pega da tabela MovimentacaoImpressora
+    lista_mov_impressoras = MovimentacaoImpressora.query.order_by(MovimentacaoImpressora.data.desc()).limit(7).all()
+
+    return render_template('dashboard.html', 
+                           hoje=hoje.strftime('%d/%m/%Y'),
+                           total_vendas_mes=total_vendas_mes,
+                           total_contratos_ativos=total_contratos_ativos,
+                           total_contratos_valor=total_contratos_valor,
+                           total_itens_alerta=total_itens_alerta,
+                           total_alertas=total_alertas,
+                           grafico_labels=grafico_labels,
+                           grafico_receitas=grafico_receitas,
+                           grafico_despesas=grafico_despesas,
+                           status_impressoras=status_impressoras,
+                           lista_vencimentos=lista_vencimentos,
+                           lista_mov_estoque=lista_mov_estoque,
+                           lista_mov_impressoras=lista_mov_impressoras)
+
 
 @app.route('/notificacoes')
 def notificacoes():

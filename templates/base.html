@@ -2,278 +2,243 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PrintControl - Sistema Unificado</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+
+<style>
         :root {
-            /* --- Cores Base (Compartilhadas) --- */
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
+            /* --- LIGHT MODE (Padrão) --- */
+            --bg-body: #f1f5f9;
             
-            /* --- MODO CLARO (Padrão) --- */
-            --bg-body: #f5f7fa;
-            --bg-card: #ffffff;
-            --bg-sidebar: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
-            --text-main: #333333;
-            --text-muted: #6c757d;
-            --border-color: #eeeeee;
+            /* Títulos e Textos Principais: Azul Petróleo Escuro (#2c3e50) */
+            --text-main: #2c3e50; 
+            
+            /* MUDANÇA AQUI: Descrições/Labels mais suaves (Cinza Médio-Claro) */
+            /* Antes estava muito escuro (#64748b), agora é #85929e */
+            --text-muted: #85929e; 
+            
+            --sidebar-bg: #0f172a;
+            --sidebar-width: 260px;
+            --primary-color: #3b82f6;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
             --input-bg: #ffffff;
-            --input-border: #ced4da;
-            --table-head-bg: #f8f9fa;
-            --table-hover: #fafafa;
-            --filter-bar-bg: #ffffff; /* Fundo da barra de filtros claro */
+            --input-border: #cbd5e1;
         }
 
-        /* --- MODO ESCURO (Tons de Azul Noturno Profundo) --- */
+        /* --- DARK MODE (Ativado) --- */
         body.dark-mode {
-            /* Fundo Geral */
-            --bg-body: #0f1216;      /* Quase preto, muito sutil */
-            
-            /* Elementos (Cards, Filtros, Modais) */
-            --bg-card: #1a222c;      /* Azul petróleo escuro */
-            --filter-bar-bg: #1a222c; /* Garante que a barra de filtros use essa cor */
-            
-            /* Sidebar (Mantida) */
-            --bg-sidebar: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
-            
-            /* Textos */
-            --text-main: #e0e6ed;    /* Branco gelo */
-            --text-muted: #94a3b8;   /* Cinza azulado */
-            
-            /* Bordas */
-            --border-color: #2d3748;
-            
-            /* Inputs (Campos de texto) */
-            --input-bg: #232d3a;     /* Um pouco mais claro que o card para contraste */
-            --input-border: #38465a;
-            
-            /* Tabelas */
-            --table-head-bg: #151b23;
-            --table-hover: #263140;
+            --bg-body: #0f172a; 
+            /* Texto principal Cinza Suave no escuro */
+            --text-main: #cbd5e1; 
+            /* Descrições no escuro (mantidas pois você gostou) */
+            --text-muted: #94a3b8;
+            --sidebar-bg: #020617; 
+            --card-bg: #1e293b; 
+            --border-color: #334155;
+            --input-bg: #0f172a;
+            --input-border: #334155;
         }
 
-        /* --- APLICAÇÃO GLOBAL --- */
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background-color: var(--bg-body); 
-            color: var(--text-main); 
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        /* --- FORÇA BRUTA: SOBRESCREVENDO CLASSES DAS PÁGINAS --- */
-        
-        /* 1. Barra de Filtros (Box de Busca em Estoque, Clientes, Vendas) */
-        body.dark-mode .filter-bar,
-        body.dark-mode .card-header, 
-        body.dark-mode .page-header {
-            background-color: var(--bg-card) !important;
-            border-color: var(--border-color) !important;
-            color: var(--text-main) !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2) !important; /* Sombra mais forte no dark */
-        }
-
-        /* 2. Cards e Containers Brancos */
-        body.dark-mode .bg-white, 
-        body.dark-mode .bg-light,
-        body.dark-mode .card,
-        body.dark-mode .modal-content,
-        body.dark-mode .list-group-item,
-        body.dark-mode .accordion-item,
-        body.dark-mode .accordion-body {
-            background-color: var(--bg-card) !important;
-            color: var(--text-main) !important;
-            border-color: var(--border-color) !important;
-        }
-
-        /* 3. Inputs (Caixas de Texto, Selects) */
-        body.dark-mode .form-control, 
-        body.dark-mode .form-select,
-        body.dark-mode textarea {
-            background-color: var(--input-bg) !important;
-            border-color: var(--input-border) !important;
-            color: #ffffff !important; /* Texto branco puro dentro do input */
-        }
-        
-        body.dark-mode .form-control:focus, 
-        body.dark-mode .form-select:focus {
-            background-color: var(--input-bg) !important;
-            border-color: var(--secondary-color) !important;
-            color: #ffffff !important;
-            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
-        }
-        
-        /* Placeholder (Texto de ajuda dentro do input) */
-        body.dark-mode ::placeholder { color: #6c7a89 !important; opacity: 1; }
-        body.dark-mode :-ms-input-placeholder { color: #6c7a89 !important; }
-
-        /* 4. Tabelas */
-        body.dark-mode .table {
-            color: var(--text-main) !important;
-            border-color: var(--border-color);
-        }
-        body.dark-mode .table thead th {
-            background-color: var(--table-head-bg) !important;
-            color: var(--text-muted) !important;
-            border-color: var(--border-color);
-        }
-        body.dark-mode .table tbody td {
-            background-color: var(--bg-card) !important;
-            border-color: var(--border-color);
-        }
-        body.dark-mode .table-hover tbody tr:hover td {
-            background-color: var(--table-hover) !important;
-        }
-        body.dark-mode .table-striped tbody tr:nth-of-type(odd) {
-            background-color: rgba(255,255,255,0.02) !important;
-        }
-
-        /* 5. Textos e Ícones */
-        body.dark-mode .text-dark { color: var(--text-main) !important; }
-        body.dark-mode .text-muted { color: var(--text-muted) !important; }
-        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
-        body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
-            color: var(--text-main) !important;
-        }
-
-        /* 6. Botões e Modais */
-        body.dark-mode .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
-        body.dark-mode .modal-header, body.dark-mode .modal-footer {
-            border-color: var(--border-color);
-            background-color: var(--bg-card) !important;
-        }
-
-        /* 7. Autocomplete e Menus */
-        body.dark-mode .autocomplete-suggestions {
-            background-color: var(--bg-card) !important;
-            border-color: var(--border-color) !important;
-        }
-        body.dark-mode .autocomplete-suggestion {
-            background-color: var(--bg-card);
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
             color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
         }
-        body.dark-mode .autocomplete-suggestion:hover {
-            background-color: var(--table-hover);
+
+        /* --- BLINDAGEM DA SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            transition: background-color 0.3s;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 16px !important; 
         }
+        .menu-category { font-size: 12px !important; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 600; margin: 24px 12px 12px 12px; }
+        .nav-link { display: flex; align-items: center; padding: 10px 12px; color: #94a3b8; border-radius: 8px; font-weight: 500; font-size: 14px !important; transition: all 0.2s; text-decoration: none; }
+        .nav-link i { width: 20px; margin-right: 12px; text-align: center; font-size: 16px !important; transition: color 0.2s; }
+        .nav-link:hover { background-color: rgba(255,255,255,0.05); color: white; }
+        .nav-link:hover i { color: var(--primary-color); }
+        .nav-link.active { background-color: var(--primary-color); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        .nav-link.active i { color: white; }
+        .sidebar-header { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .brand-logo { font-size: 1.25rem; font-weight: 700; color: white; letter-spacing: -0.5px; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+        .badge-nav { margin-left: auto; background-color: #ef4444; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+        .theme-toggle { background: rgba(255,255,255,0.05); border: none; color: #94a3b8; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .theme-toggle:hover { background: rgba(255,255,255,0.1); color: white; }
+        .sidebar-menu { padding: 20px 16px; flex: 1; overflow-y: auto; }
+        .sidebar-menu::-webkit-scrollbar { width: 4px; }
+        .sidebar-menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
         /* --- LAYOUT GERAL --- */
-        .sidebar { 
-            background: var(--bg-sidebar); 
-            min-height: 100vh; 
-            color: white; 
-            padding: 0; 
-            position: fixed; 
-            width: 250px; 
-            z-index: 1000; 
-            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1); 
+        .main-content { margin-left: var(--sidebar-width); padding: 30px; min-height: 100vh; }
+        .page-header { padding-bottom: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); }
+        
+        .page-title { 
+            font-weight: 700; 
+            color: var(--text-main); 
+            margin-bottom: 0.25rem; 
         }
-        .sidebar-brand { padding: 20px; background-color: rgba(0, 0, 0, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-        .sidebar .nav-link { color: rgba(255, 255, 255, 0.8); padding: 12px 20px; transition: all 0.3s; border-left: 4px solid transparent; cursor: pointer; }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { background-color: rgba(255, 255, 255, 0.1); border-left-color: var(--secondary-color); color: white; }
+
+        /* --- CORREÇÕES GLOBAIS --- */
         
-        .main-content { margin-left: 250px; padding: 20px; }
+        /* Light Mode Defaults */
+        .text-dark { color: var(--text-main) !important; }
+        .text-muted { color: var(--text-muted) !important; } /* Força o uso da variável mais clara */
         
-        /* Ajuste fino para Cards */
-        .card { 
-            background-color: var(--bg-card); 
-            border-radius: 10px; 
-            border: 1px solid var(--border-color); 
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); 
-            margin-bottom: 24px; 
+        /* Dark Mode Overrides */
+        body.dark-mode .card, 
+        body.dark-mode .filter-bar, 
+        body.dark-mode .list-group-item {
+            background-color: var(--card-bg) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-main);
         }
         
-        .page-header { margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        body.dark-mode .bg-light, 
+        body.dark-mode .bg-white {
+            background-color: #0f172a !important; 
+            color: var(--text-main) !important;
+        }
+
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+        body.dark-mode h4, body.dark-mode h5, body.dark-mode h6,
+        body.dark-mode .page-title,
+        body.dark-mode .text-dark {
+            color: #cbd5e1 !important; 
+        }
         
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-body); }
-        ::-webkit-scrollbar-thumb { background: #4a6572; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #34495e; }
+        /* Tabelas */
+        body.dark-mode .table { color: var(--text-main); border-color: var(--border-color); }
+        body.dark-mode .table thead th { background-color: #1e293b; color: #cbd5e1; border-color: var(--border-color); }
+        body.dark-mode .table-hover tbody tr:hover { background-color: rgba(255,255,255,0.05); }
+        body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * { color: var(--text-main); box-shadow: inset 0 0 0 9999px rgba(255,255,255,0.03); }
+
+        /* Formulários */
+        body.dark-mode .form-control, body.dark-mode .form-select, body.dark-mode textarea {
+            background-color: var(--input-bg) !important; border-color: var(--border-color) !important; color: #cbd5e1 !important;
+        }
+        body.dark-mode .form-control:focus, body.dark-mode .form-select:focus {
+            background-color: #020617 !important; border-color: var(--primary-color) !important; color: #e2e8f0 !important;
+        }
+        body.dark-mode .form-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e"); }
+
+        /* Modais */
+        body.dark-mode .modal-content { background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); }
+        body.dark-mode .modal-header, body.dark-mode .modal-footer { border-color: var(--border-color); }
+        body.dark-mode .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+        
+        .card { box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: none; border-radius: 12px; }
     </style>
+
 </head>
 <body>
-    <div class="sidebar d-flex flex-column">
-        <div class="sidebar-brand">
-            <h3 class="fw-bold m-0 text-white"><i class="fas fa-print me-2"></i> PrintControl</h3>
-        </div>
-        <div class="mt-4 flex-grow-1">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
-                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'estoque' %}active{% endif %}" href="{{ url_for('estoque') }}">
-                        <i class="fas fa-boxes me-2"></i> Estoque
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'fornecedores' %}active{% endif %}" href="{{ url_for('fornecedores') }}">
-                        <i class="fas fa-truck me-2"></i> Fornecedores
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'clientes' %}active{% endif %}" href="{{ url_for('clientes') }}">
-                        <i class="fas fa-users me-2"></i> Clientes
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'vendas' %}active{% endif %}" href="{{ url_for('vendas') }}">
-                            <i class="fas fa-shopping-cart me-2"></i> Vendas
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'saida_locacao' %}active{% endif %}" href="{{ url_for('saida_locacao') }}">
-                        <i class="fas fa-box-open me-2"></i> Saída Locação
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'contratos' %}active{% endif %}" href="{{ url_for('contratos') }}">
-                        <i class="fas fa-file-contract me-2"></i> Contratos
-                    </a>
 
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'impressoras' %}active{% endif %}" href="{{ url_for('impressoras') }}">
-                        <i class="fas fa-print me-2"></i> Impressoras
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'notificacoes' %}active{% endif %}" href="{{ url_for('notificacoes') }}">
-                        <i class="fas fa-bell me-2"></i> Notificações
-                        {% if total_alertas and total_alertas > 0 %}
-                            <span class="badge bg-danger ms-2 rounded-pill">{{ total_alertas }}</span>
-                        {% endif %}
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'logs' %}active{% endif %}" href="{{ url_for('logs') }}">
-                        <i class="fas fa-list-ul me-2"></i> Logs
-                    </a>
-                </li>
-                <li class="nav-item mt-2">
-                    <a class="nav-link {% if request.endpoint == 'configuracoes' %}active{% endif %}" href="{{ url_for('configuracoes') }}">
-                        <i class="fas fa-cog me-2"></i> Configurações
-                    </a>
-                </li>
-            </ul>
-        </div>
-        
-        <div class="p-3 border-top border-secondary">
-            <a class="nav-link text-white-50" href="#" onclick="toggleDarkMode(event)">
-                <i class="fas fa-moon me-2" id="icon-theme"></i> <span id="text-theme">Modo Escuro</span>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('index') }}" class="brand-logo">
+                <i class="fas fa-cubes text-primary"></i> PrintControl
             </a>
+            <button class="theme-toggle" id="themeToggle" title="Alternar Tema">
+                <i class="fas fa-moon"></i>
+            </button>
         </div>
-    </div>
+
+        <div class="sidebar-menu">
+            
+            <div class="menu-category">Principal</div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </div>
+
+            <div class="menu-category">Gestão</div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'clientes' %}active{% endif %}" href="{{ url_for('clientes') }}">
+                    <i class="fas fa-users"></i> Clientes
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'fornecedores' %}active{% endif %}" href="{{ url_for('fornecedores') }}">
+                    <i class="fas fa-truck"></i> Fornecedores
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'contratos' %}active{% endif %}" href="{{ url_for('contratos') }}">
+                    <i class="fas fa-file-signature"></i> Contratos
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'financeiro' %}active{% endif %}" href="{{ url_for('financeiro') }}">
+                    <i class="fas fa-coins"></i> Financeiro
+                </a>
+            </div>
+
+            <div class="menu-category">Operações</div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'estoque' %}active{% endif %}" href="{{ url_for('estoque') }}">
+                    <i class="fas fa-boxes"></i> Estoque
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'vendas' %}active{% endif %}" href="{{ url_for('vendas') }}">
+                    <i class="fas fa-shopping-cart"></i> Vendas
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'saida_locacao' %}active{% endif %}" href="{{ url_for('saida_locacao') }}">
+                    <i class="fas fa-dolly"></i> Saída Locação
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'impressoras' %}active{% endif %}" href="{{ url_for('impressoras') }}">
+                    <i class="fas fa-print"></i> Impressoras
+                </a>
+            </div>
+
+            <div class="menu-category">Administração</div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'notificacoes' %}active{% endif %}" href="{{ url_for('notificacoes') }}">
+                    <i class="fas fa-bell"></i> Notificações
+                    {% if total_alertas and total_alertas > 0 %}
+                        <span class="badge-nav">{{ total_alertas }}</span>
+                    {% endif %}
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'logs' %}active{% endif %}" href="{{ url_for('logs') }}">
+                    <i class="fas fa-list-ul"></i> Logs do Sistema
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'configuracoes' %}active{% endif %}" href="{{ url_for('configuracoes') }}">
+                    <i class="fas fa-cog"></i> Configurações
+                </a>
+            </div>
+
+        </div>
+    </nav>
 
     <div class="main-content">
         {% with messages = get_flashed_messages() %}
             {% if messages %}
-                <div class="alert alert-info alert-dismissible fade show shadow-sm">
+                <div class="alert alert-info alert-dismissible fade show shadow-sm mb-4" role="alert">
                     {% for message in messages %}{{ message }}{% endfor %}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
@@ -283,45 +248,32 @@
         {% block content %}{% endblock %}
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        function enableDarkMode() {
-            document.body.classList.add('dark-mode');
-            localStorage.setItem('darkMode', 'enabled');
-            
-            const icon = document.getElementById('icon-theme');
-            const text = document.getElementById('text-theme');
-            if(icon) { icon.classList.remove('fa-moon'); icon.classList.add('fa-sun'); }
-            if(text) { text.innerText = "Modo Claro"; }
+        const toggleBtn = document.getElementById('themeToggle');
+        const icon = toggleBtn.querySelector('i');
+        const body = document.body;
+        const savedTheme = localStorage.getItem('theme');
+
+        if (savedTheme === 'dark') {
+            body.classList.add('dark-mode');
+            icon.classList.replace('fa-moon', 'fa-sun');
         }
 
-        function disableDarkMode() {
-            document.body.classList.remove('dark-mode');
-            localStorage.setItem('darkMode', 'disabled');
+        toggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
             
-            const icon = document.getElementById('icon-theme');
-            const text = document.getElementById('text-theme');
-            if(icon) { icon.classList.remove('fa-sun'); icon.classList.add('fa-moon'); }
-            if(text) { text.innerText = "Modo Escuro"; }
-        }
-
-        function toggleDarkMode(e) {
-            e.preventDefault();
-            if (document.body.classList.contains('dark-mode')) {
-                disableDarkMode();
+            if (isDark) {
+                icon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'dark');
             } else {
-                enableDarkMode();
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', (event) => {
-            if (localStorage.getItem('darkMode') === 'enabled') {
-                enableDarkMode();
+                icon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'light');
             }
         });
     </script>
-    
     {% block scripts %}{% endblock %}
 </body>
 </html>
