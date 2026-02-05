@@ -2,370 +2,227 @@
 
 {% block content %}
 <style>
-    .card-financeiro { border: none; border-radius: 12px; transition: all 0.3s; position: relative; overflow: hidden; }
-    .card-financeiro:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-    .icon-bg { position: absolute; right: -10px; bottom: -10px; font-size: 5rem; opacity: 0.1; transform: rotate(-15deg); }
+    /* --- ESTILOS GERAIS --- */
+    .page-title { color: #2C3E50; font-weight: 700; margin-bottom: 5px; }
+    .text-muted-small { font-size: 0.85rem; color: #6c757d; }
     
-    /* Cores Financeiras */
-    .bg-receita { background: linear-gradient(135deg, #10b981, #059669); color: white; }
-    .bg-despesa { background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; }
-    .bg-saldo { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+    /* Cards de KPI (Dashboard) */
+    .kpi-card {
+        background: #fff;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.03);
+        padding: 20px;
+        height: 100%;
+        transition: transform 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    .kpi-card:hover { transform: translateY(-3px); }
+    .kpi-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; margin-bottom: 10px; display: block; }
+    .kpi-value { font-size: 1.8rem; font-weight: 700; color: #2C3E50; }
+    .kpi-icon { position: absolute; right: 20px; top: 20px; font-size: 2rem; opacity: 0.1; }
     
-    .status-positivo { color: #059669; background-color: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 15px; }
-    .status-negativo { color: #b91c1c; background-color: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; }
+    /* Cores Específicas */
+    .text-success-custom { color: #10b981 !important; }
+    .text-danger-custom { color: #ef4444 !important; }
+    .text-primary-custom { color: #3b82f6 !important; }
+    .text-warning-custom { color: #f59e0b !important; }
+    .border-left-success { border-left: 4px solid #10b981; }
+    .border-left-danger { border-left: 4px solid #ef4444; }
+    .border-left-primary { border-left: 4px solid #3b82f6; }
+    .border-left-warning { border-left: 4px solid #f59e0b; }
+
+    /* Navegação */
+    .nav-tabs .nav-link { color: #6c757d; font-weight: 600; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; }
+    .nav-tabs .nav-link.active { color: #3b82f6; background: transparent; border-bottom-color: #3b82f6; }
     
-    .table-caixa th { background-color: #f8fafc; text-transform: uppercase; font-size: 0.75rem; color: #64748b; }
-    .tipo-fixo { border-left: 3px solid #3b82f6; padding-left: 8px; }
-    .tipo-variavel { border-left: 3px solid #f59e0b; padding-left: 8px; }
+    /* Tabelas */
+    .table-clean th { background-color: #f8f9fa; border-top: none; border-bottom: 2px solid #e9ecef; font-size: 0.75rem; text-transform: uppercase; color: #6c757d; font-weight: 700; }
+    .table-clean td { vertical-align: middle; border-bottom: 1px solid #f0f0f0; }
 </style>
 
-<div id="financeiro-page" class="page-content active">
+<div class="container-fluid px-4 py-4">
     
-    <div class="page-header d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="page-title">Módulo Financeiro</h1>
-            <p class="text-muted small mb-0">Gestão de Fluxo de Caixa e Conciliação</p>
+            <h1 class="page-title">Financeiro</h1>
+            <p class="text-muted-small mb-0">Visão geral, fluxo de caixa e lançamentos</p>
         </div>
-        <div>
-            <button class="btn btn-outline-primary me-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalBanco">
-                <i class="fas fa-university me-2"></i> Cadastrar Banco
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-success shadow-sm" onclick="abrirModalRapido('Receita')">
+                <i class="fas fa-arrow-up me-2"></i>Receita
             </button>
-            <button class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#modalLancamento">
-                <i class="fas fa-plus-circle me-2"></i> Novo Lançamento
+            <button class="btn btn-outline-danger shadow-sm" onclick="abrirModalRapido('Despesa')">
+                <i class="fas fa-arrow-down me-2"></i>Despesa
+            </button>
+            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalLancamentoInteligente">
+                <i class="fas fa-magic me-2"></i>Lançamento Avançado
             </button>
         </div>
     </div>
 
     <ul class="nav nav-tabs mb-4" id="finTabs" role="tablist">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-dash">Dashboard & Previsão</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mov">Lançamentos</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-caixa">Fluxo de Caixa (Conciliação)</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-bancos">Bancos Cadastrados</button></li>
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-dash">Dashboard</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-lancamentos">Lançamentos</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-caixa">Fluxo de Caixa</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-bancos">Cadastros & Relatórios</button></li>
     </ul>
 
     <div class="tab-content">
         
         <div class="tab-pane fade show active" id="tab-dash">
             <div class="row g-4 mb-4">
-                <div class="col-md-4">
-                    <div class="card card-financeiro bg-receita h-100 p-4">
-                        <h6 class="text-uppercase opacity-75 fw-bold">Receitas (Mês)</h6>
-                        <h2 class="mt-2 mb-0 fw-bold">{{ total_receitas_mes | currency }}</h2>
-                        <small class="opacity-75"><i class="fas fa-check-circle me-1"></i> Confirmadas</small>
-                        <i class="fas fa-arrow-up icon-bg"></i>
+                <div class="col-md-3">
+                    <div class="kpi-card border-left-primary">
+                        <span class="kpi-label">Saldo Total (Bancos)</span>
+                        <div class="kpi-value text-primary-custom">{{ saldo_bancos_total | currency }}</div>
+                        <i class="fas fa-wallet kpi-icon text-primary"></i>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">Disponível hoje</small>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card card-financeiro bg-despesa h-100 p-4">
-                        <h6 class="text-uppercase opacity-75 fw-bold">Despesas (Mês)</h6>
-                        <h2 class="mt-2 mb-0 fw-bold">{{ total_despesas_mes | currency }}</h2>
-                        <small class="opacity-75"><i class="fas fa-check-circle me-1"></i> Pagas</small>
-                        <i class="fas fa-arrow-down icon-bg"></i>
+                <div class="col-md-3">
+                    <div class="kpi-card border-left-success">
+                        <span class="kpi-label">A Receber (Mês)</span>
+                        <div class="kpi-value text-success-custom">{{ pendente_receita | currency }}</div>
+                        <i class="fas fa-hand-holding-usd kpi-icon text-success"></i>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">Pendências até o fim do mês</small>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card card-financeiro bg-saldo h-100 p-4">
-                        <h6 class="text-uppercase opacity-75 fw-bold">Saldo Bancário Total</h6>
-                        <h2 class="mt-2 mb-0 fw-bold">{{ saldo_bancos_total | currency }}</h2>
-                        <small class="opacity-75">Soma de todas as contas</small>
-                        <i class="fas fa-wallet icon-bg"></i>
+                <div class="col-md-3">
+                    <div class="kpi-card border-left-danger">
+                        <span class="kpi-label">A Pagar (Mês)</span>
+                        <div class="kpi-value text-danger-custom">{{ pendente_despesa | currency }}</div>
+                        <i class="fas fa-file-invoice-dollar kpi-icon text-danger"></i>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">Pendências até o fim do mês</small>
                     </div>
                 </div>
-            </div>
-
-            <div class="row g-4 mb-4">
-                <div class="col-lg-6">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white fw-bold py-3">
-                            <i class="fas fa-calendar-day me-2 text-primary"></i> Situação Hoje ({{ hoje.strftime('%d/%m') }})
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-3">Baseado apenas no que foi efetivamente pago/recebido até o momento.</p>
-                            {% if saldo_dia_hoje >= 0 %}
-                                <div class="status-positivo d-flex align-items-center">
-                                    <i class="fas fa-check-circle fa-2x me-3"></i>
-                                    <div>
-                                        <h5 class="mb-0 fw-bold">Saldo Positivo</h5>
-                                        <span>Estamos operando no azul hoje: {{ saldo_dia_hoje | currency }}</span>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <div class="status-negativo d-flex align-items-center">
-                                    <i class="fas fa-exclamation-circle fa-2x me-3"></i>
-                                    <div>
-                                        <h5 class="mb-0 fw-bold">Saldo Negativo</h5>
-                                        <span>Atenção, saídas superaram entradas: {{ saldo_dia_hoje | currency }}</span>
-                                    </div>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white fw-bold py-3">
-                            <i class="fas fa-chart-line me-2 text-primary"></i> Previsão Fim do Mês
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-3">Considerando saldo atual + contas a receber - contas a pagar pendentes.</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                                <span>A Receber (Pendente):</span>
-                                <span class="text-success fw-bold">{{ pendente_receita | currency }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                                <span>A Pagar (Pendente):</span>
-                                <span class="text-danger fw-bold">{{ pendente_despesa | currency }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-3 p-2 bg-light rounded">
-                                <span class="fw-bold text-dark">Saldo Projetado:</span>
-                                <span class="fw-bold fs-5 {% if saldo_projetado >= 0 %}text-success{% else %}text-danger{% endif %}">{{ saldo_projetado | currency }}</span>
-                            </div>
-                        </div>
+                <div class="col-md-3">
+                    <div class="kpi-card border-left-warning">
+                        <span class="kpi-label">Previsão Fim do Mês</span>
+                        <div class="kpi-value text-warning-custom">{{ saldo_projetado | currency }}</div>
+                        <i class="fas fa-chart-line kpi-icon text-warning"></i>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">(Saldo + Receber - Pagar)</small>
                     </div>
                 </div>
             </div>
 
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold"><i class="fas fa-filter me-2"></i> Relatório de Despesas</h6>
-                    <form class="d-flex gap-2" method="GET" action="{{ url_for('financeiro') }}">
-                        <select class="form-select form-select-sm" name="filtro_tipo_custo" onchange="this.form.submit()">
-                            <option value="Todos" {% if filtro_tipo_custo == 'Todos' %}selected{% endif %}>Comparativo (Todos)</option>
-                            <option value="Fixo" {% if filtro_tipo_custo == 'Fixo' %}selected{% endif %}>Somente Fixos</option>
-                            <option value="Variavel" {% if filtro_tipo_custo == 'Variavel' %}selected{% endif %}>Somente Variáveis</option>
-                        </select>
-                    </form>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>Categoria</th>
-                                    <th>Descrição</th>
-                                    <th>Vencimento</th>
-                                    <th>Valor</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for lanc in relatorio_despesas %}
-                                <tr>
-                                    <td>
-                                        {% if lanc.categoria_custo == 'Fixo' %}
-                                            <span class="badge bg-primary">Fixo</span>
-                                        {% else %}
-                                            <span class="badge bg-warning text-dark">Variável</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ lanc.descricao }}</td>
-                                    <td>{{ lanc.data_vencimento.strftime('%d/%m/%Y') }}</td>
-                                    <td class="fw-bold text-danger">- {{ lanc.valor | currency }}</td>
-                                    <td>
-                                        {% if lanc.pago %}
-                                            <span class="badge bg-success">Pago</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Pendente</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="5" class="text-center py-4 text-muted">Nenhum registro encontrado para este filtro.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="tab-mov">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-bold py-3">Todos os Lançamentos do Mês</div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-4">Data Venc.</th>
-                                    <th>Descrição</th>
-                                    <th>Tipo</th>
-                                    <th>Banco/Caixa</th>
-                                    <th class="text-end">Valor</th>
-                                    <th class="text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for l in lancamentos_todos %}
-                                <tr>
-                                    <td class="ps-4">{{ l.data_vencimento.strftime('%d/%m') }}</td>
-                                    <td>
-                                        <div class="fw-bold text-dark">{{ l.descricao }}</div>
-                                        <small class="text-muted">{{ l.categoria_custo }}</small>
-                                    </td>
-                                    <td>
-                                        {% if l.tipo == 'Receita' %}
-                                            <i class="fas fa-arrow-up text-success me-1"></i> Receita
-                                        {% else %}
-                                            <i class="fas fa-arrow-down text-danger me-1"></i> Despesa
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ l.banco.nome_banco if l.banco else 'Não Definido' }}</td>
-                                    <td class="text-end fw-bold {% if l.tipo == 'Receita' %}text-success{% else %}text-danger{% endif %}">
-                                        {{ l.valor | currency }}
-                                    </td>
-                                    <td class="text-center">
-                                        {% if not l.pago %}
-                                            <form action="{{ url_for('baixa_lancamento') }}" method="POST" class="d-inline" onsubmit="return confirm('Confirmar baixa deste lançamento?')">
-                                                <input type="hidden" name="id" value="{{ l.id }}">
-                                                <button class="btn btn-sm btn-outline-success" title="Dar Baixa (Pagar/Receber)"><i class="fas fa-check"></i></button>
-                                            </form>
-                                        {% else %}
-                                            <span class="badge bg-light text-dark border">Baixado em {{ l.data_pagamento.strftime('%d/%m') }}</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="tab-caixa">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <form class="row g-3 align-items-end" method="GET" action="{{ url_for('financeiro') }}">
-                        <input type="hidden" name="tab_ativa" value="tab-caixa">
-                        <div class="col-md-4">
-                            <label class="small fw-bold text-muted">Selecionar Banco (Conciliação)</label>
-                            <select class="form-select" name="fc_banco_id" required>
-                                {% for b in bancos %}
-                                <option value="{{ b.id }}" {% if fc_banco_selecionado == b.id %}selected{% endif %}>{{ b.nome_banco }}</option>
-                                {% endfor %}
-                            </select>
+            <div class="row g-4">
+                <div class="col-md-8">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="mb-0 fw-bold text-muted">Últimos Lançamentos</h6>
                         </div>
-                        <div class="col-md-3">
-                            <label class="small fw-bold text-muted">Data Início</label>
-                            <input type="date" class="form-control" name="fc_data_ini" value="{{ fc_data_ini }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="small fw-bold text-muted">Data Fim</label>
-                            <input type="date" class="form-control" name="fc_data_fim" value="{{ fc_data_fim }}">
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i> Filtrar</button>
-                        </div>
-                    </form>
-                </div>
-                
-                <div class="card-body bg-light">
-                    {% if fc_banco_obj %}
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="card border-primary shadow-sm">
-                                <div class="card-body d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h5 class="fw-bold text-primary mb-0"><i class="fas fa-wallet me-2"></i> {{ fc_banco_obj.nome_banco }}</h5>
-                                        <small class="text-muted">Extrato do período selecionado</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <small class="d-block text-muted fw-bold">SALDO ATUAL DO BANCO (SISTEMA)</small>
-                                        <h3 class="fw-bold mb-0 text-dark">{{ fc_banco_obj.saldo_atual | currency }}</h3>
-                                    </div>
-                                    <div>
-                                        <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalAjusteSaldo">
-                                            <i class="fas fa-wrench me-1"></i> Ajuste Manual
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card border-0">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0 table-caixa align-middle">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-4">Data Pagto</th>
-                                        <th>Descrição</th>
-                                        <th>Tipo</th>
-                                        <th class="text-end">Entrada</th>
-                                        <th class="text-end">Saída</th>
-                                        <th class="text-end pe-4">Saldo Acumulado</th>
-                                    </tr>
-                                </thead>
+                            <table class="table table-clean mb-0">
+                                <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Status</th></tr></thead>
                                 <tbody>
-                                    <tr class="bg-light fw-bold">
-                                        <td colspan="5" class="ps-4 text-end">SALDO ANTERIOR AO PERÍODO:</td>
-                                        <td class="text-end pe-4">{{ fc_saldo_anterior | currency }}</td>
-                                    </tr>
-
-                                    {% for item in fc_extrato %}
+                                    {% for l in lancamentos_todos[:5] %}
                                     <tr>
-                                        <td class="ps-4">{{ item.data_pagamento.strftime('%d/%m/%Y') }}</td>
-                                        <td>{{ item.descricao }}</td>
-                                        <td><span class="badge bg-light text-dark border">{{ item.categoria_custo }}</span></td>
-                                        
-                                        <td class="text-end text-success">
-                                            {% if item.tipo == 'Receita' %}{{ item.valor | currency }}{% else %}-{% endif %}
+                                        <td>{{ l.data_vencimento.strftime('%d/%m') }}</td>
+                                        <td>{{ l.descricao }}</td>
+                                        <td><span class="badge bg-light text-dark border">{{ l.categoria.nome if l.categoria else '-' }}</span></td>
+                                        <td class="fw-bold {% if l.tipo == 'Receita' %}text-success{% else %}text-danger{% endif %}">{{ l.valor | currency }}</td>
+                                        <td>
+                                            {% if l.pago %}<i class="fas fa-check-circle text-success" title="Pago"></i>
+                                            {% else %}<i class="fas fa-clock text-warning" title="Pendente"></i>{% endif %}
                                         </td>
-                                        <td class="text-end text-danger">
-                                            {% if item.tipo == 'Despesa' %}{{ item.valor | currency }}{% else %}-{% endif %}
-                                        </td>
-                                        
-                                        <td class="text-end pe-4 text-muted"><small>Movimentado</small></td>
                                     </tr>
                                     {% endfor %}
-                                    
-                                    <tr class="table-active fw-bold border-top">
-                                        <td colspan="3" class="ps-4">TOTAL DO PERÍODO</td>
-                                        <td class="text-end text-success">{{ fc_total_receitas | currency }}</td>
-                                        <td class="text-end text-danger">{{ fc_total_despesas | currency }}</td>
-                                        <td class="text-end pe-4 fs-6 text-primary">Resultado: {{ (fc_total_receitas - fc_total_despesas) | currency }}</td>
-                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                    {% else %}
-                    <div class="text-center py-5 text-muted">
-                        <i class="fas fa-university fa-3x mb-3 opacity-25"></i>
-                        <p>Selecione um banco acima para iniciar a conciliação.</p>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="mb-0 fw-bold text-muted">Saldos por Banco</h6>
+                        </div>
+                        <div class="card-body">
+                            {% for b in bancos %}
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                                <div>
+                                    <div class="fw-bold text-dark">{{ b.nome }}</div>
+                                    <small class="text-muted">{{ b.agencia_conta or 'Caixa' }}</small>
+                                </div>
+                                <div class="fw-bold {% if b.saldo_atual >= 0 %}text-primary{% else %}text-danger{% endif %}">
+                                    {{ b.saldo_atual | currency }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <div class="tab-pane fade" id="tab-bancos">
-            <div class="card shadow-sm border-0">
+        <div class="tab-pane fade" id="tab-lancamentos">
+            <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
-                    <table class="table table-hover">
+                    <form method="GET" action="{{ url_for('financeiro') }}">
+                        <input type="hidden" name="tab_ativa" value="tab-lancamentos">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-2"><label class="small text-muted">Início</label><input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ request.args.get('data_inicio') }}"></div>
+                            <div class="col-md-2"><label class="small text-muted">Fim</label><input type="date" name="data_fim" class="form-control form-control-sm" value="{{ request.args.get('data_fim') }}"></div>
+                            <div class="col-md-2">
+                                <label class="small text-muted">Status</label>
+                                <select name="status" class="form-select form-select-sm">
+                                    <option value="Todos">Todos</option>
+                                    <option value="Aberto" {% if request.args.get('status') == 'Aberto' %}selected{% endif %}>Aberto</option>
+                                    <option value="Pago" {% if request.args.get('status') == 'Pago' %}selected{% endif %}>Pago</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2"><button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-clean table-hover mb-0">
                         <thead>
                             <tr>
+                                <th class="text-center" width="50">Baixa</th>
+                                <th>Vencimento</th>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
                                 <th>Banco</th>
-                                <th>Agência/Conta</th>
-                                <th>Saldo Inicial Cadastrado</th>
-                                <th>Saldo Atual</th>
-                                <th>Ação</th>
+                                <th class="text-end">Valor</th>
+                                <th class="text-end">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for b in bancos %}
-                            <tr>
-                                <td class="fw-bold">{{ b.nome_banco }}</td>
-                                <td>{{ b.agencia_conta }}</td>
-                                <td>{{ b.saldo_inicial | currency }}</td>
-                                <td class="fw-bold text-primary">{{ b.saldo_atual | currency }}</td>
+                            {% for l in lancamentos_todos %}
+                            <tr class="{% if l.pago %}opacity-50{% endif %}">
+                                <td class="text-center">
+                                    {% if not l.pago %}
+                                    <form action="{{ url_for('baixa_lancamento') }}" method="POST">
+                                        <input type="hidden" name="id" value="{{ l.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success rounded-circle" style="width: 30px; height: 30px; padding: 0;"><i class="fas fa-check"></i></button>
+                                    </form>
+                                    {% else %}
+                                    <i class="fas fa-check-circle text-success"></i>
+                                    {% endif %}
+                                </td>
+                                <td>{{ l.data_vencimento.strftime('%d/%m/%Y') }}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-light text-danger"><i class="fas fa-trash"></i></button>
+                                    {{ l.descricao }}
+                                    {% if l.total_parcelas > 1 %}
+                                    <span class="badge bg-light text-dark border ms-1" style="font-size: 0.65rem;">{{ l.parcela_atual }}/{{ l.total_parcelas }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ l.categoria.nome if l.categoria else '-' }}</td>
+                                <td>{{ l.banco.nome if l.banco else '-' }}</td>
+                                <td class="text-end fw-bold {% if l.tipo == 'Receita' %}text-success{% else %}text-danger{% endif %}">{{ l.valor | currency }}</td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('excluir_lancamento', id=l.id) }}" class="text-danger btn btn-sm" onclick="return confirm('Excluir este lançamento?')"><i class="fas fa-trash"></i></a>
                                 </td>
                             </tr>
                             {% else %}
-                            <tr><td colspan="5">Nenhum banco cadastrado.</td></tr>
+                            <tr><td colspan="7" class="text-center py-4 text-muted">Nenhum lançamento encontrado.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -373,104 +230,223 @@
             </div>
         </div>
 
-    </div>
-</div>
-
-<div class="modal fade" id="modalLancamento" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Novo Lançamento</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="tab-pane fade" id="tab-caixa">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-3">
+                        <h6 class="fw-bold mb-3">Filtros de Extrato</h6>
+                        <form method="GET" action="{{ url_for('financeiro') }}">
+                            <input type="hidden" name="tab_ativa" value="tab-caixa">
+                            <div class="mb-3">
+                                <label class="small text-muted">Conta Bancária</label>
+                                <select name="fc_banco_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    {% for b in bancos %}
+                                    <option value="{{ b.id }}" {% if fc_banco_selecionado == b.id %}selected{% endif %}>{{ b.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-2"><label class="small text-muted">De</label><input type="date" name="fc_data_ini" class="form-control form-control-sm" value="{{ fc_data_ini }}"></div>
+                            <div class="mb-3"><label class="small text-muted">Até</label><input type="date" name="fc_data_fim" class="form-control form-control-sm" value="{{ fc_data_fim }}"></div>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Atualizar Extrato</button>
+                        </form>
+                    </div>
+                    
+                    <div class="card border-0 shadow-sm p-3 mt-3">
+                        <small class="text-muted d-block">Saldo Atual do Banco</small>
+                        <h4 class="fw-bold text-primary">{{ fc_banco_obj.saldo_atual | currency }}</h4>
+                        <hr>
+                        <button class="btn btn-outline-secondary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalAjusteSaldo">Ajustar Saldo Manual</button>
+                    </div>
+                </div>
+                
+                <div class="col-md-9">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <h6 class="mb-0 fw-bold">Extrato: {{ fc_banco_obj.nome }}</h6>
+                            <span class="badge bg-light text-dark border">Período: {{ fc_data_ini }} a {{ fc_data_fim }}</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0" style="font-size: 0.9rem;">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Descrição</th>
+                                        <th class="text-end">Entrada</th>
+                                        <th class="text-end">Saída</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="bg-light fw-bold text-muted">
+                                        <td colspan="2">SALDO ANTERIOR (Calculado)</td>
+                                        <td colspan="2" class="text-end">{{ fc_saldo_anterior | currency }}</td>
+                                    </tr>
+                                    {% set saldo_corrente = namespace(val=fc_saldo_anterior) %}
+                                    {% for m in fc_extrato %}
+                                    <tr>
+                                        <td>{{ m.data_pagamento.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ m.descricao }} <small class="text-muted d-block">{{ m.categoria.nome }}</small></td>
+                                        <td class="text-end text-success">{% if m.tipo == 'Receita' %}{{ m.valor | currency }}{% set saldo_corrente.val = saldo_corrente.val + m.valor %}{% endif %}</td>
+                                        <td class="text-end text-danger">{% if m.tipo == 'Despesa' %}- {{ m.valor | currency }}{% set saldo_corrente.val = saldo_corrente.val - m.valor %}{% endif %}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="fw-bold bg-light">
+                                        <td colspan="2">TOTAL DO PERÍODO</td>
+                                        <td class="text-end text-success">{{ fc_total_receitas | currency }}</td>
+                                        <td class="text-end text-danger">- {{ fc_total_despesas | currency }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <form action="{{ url_for('novo_lancamento') }}" method="POST">
-                <div class="modal-body bg-light">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label small fw-bold">Descrição</label>
-                            <input type="text" class="form-control" name="descricao" required placeholder="Ex: Conta de Luz, Venda Toners...">
+        </div>
+
+        <div class="tab-pane fade" id="tab-bancos">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm p-3 h-100">
+                        <h6 class="fw-bold mb-3">Relatório de Custos</h6>
+                        <form method="GET" action="{{ url_for('financeiro') }}">
+                            <input type="hidden" name="tab_ativa" value="tab-bancos">
+                            <div class="btn-group w-100 mb-3">
+                                <a href="{{ url_for('financeiro', tab_ativa='tab-bancos', filtro_tipo_custo='Todos') }}" class="btn btn-sm btn-outline-secondary {% if filtro_tipo_custo == 'Todos' %}active{% endif %}">Todos</a>
+                                <a href="{{ url_for('financeiro', tab_ativa='tab-bancos', filtro_tipo_custo='Fixo') }}" class="btn btn-sm btn-outline-secondary {% if filtro_tipo_custo == 'Fixo' %}active{% endif %}">Fixo</a>
+                                <a href="{{ url_for('financeiro', tab_ativa='tab-bancos', filtro_tipo_custo='Variavel') }}" class="btn btn-sm btn-outline-secondary {% if filtro_tipo_custo == 'Variavel' %}active{% endif %}">Variável</a>
+                            </div>
+                        </form>
+                        <ul class="list-group list-group-flush small">
+                            {% for item in relatorio_despesas %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span>{{ item.descricao }} <span class="text-muted">({{ item.data_vencimento.strftime('%d/%m') }})</span></span>
+                                <span class="fw-bold">{{ item.valor | currency }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0">Contas Bancárias</h6>
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoBanco">+</button>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-bold">Tipo</label>
-                            <select class="form-select" name="tipo">
-                                <option value="Receita">Receita (+)</option>
-                                <option value="Despesa">Despesa (-)</option>
-                            </select>
+                        <ul class="list-group list-group-flush">
+                            {% for b in bancos %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div><span class="fw-bold d-block">{{ b.nome }}</span><small class="text-muted">{{ b.agencia_conta }}</small></div>
+                                <span class="badge bg-light text-dark border">{{ b.saldo_atual | currency }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0">Categorias</h6>
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovaCategoria">+</button>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-bold">Valor (R$)</label>
-                            <input type="text" class="form-control" name="valor" required placeholder="0,00">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-bold">Categoria</label>
-                            <select class="form-select" name="categoria_custo">
-                                <option value="Fixo">Custo Fixo</option>
-                                <option value="Variavel">Custo Variável</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-bold">Banco</label>
-                            <select class="form-select" name="banco_id" required>
-                                {% for b in bancos %}
-                                <option value="{{ b.id }}">{{ b.nome_banco }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-bold">Vencimento</label>
-                            <input type="date" class="form-control" name="data_vencimento" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-bold">Status</label>
-                            <select class="form-select" name="status">
-                                <option value="Pendente">Pendente</option>
-                                <option value="Pago">Pago/Recebido</option>
-                            </select>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for c in todas_categorias %}
+                            <span class="badge" style="background-color: {{ c.cor_etiqueta }}; padding: 8px;">{{ c.nome }} <a href="{{ url_for('excluir_categoria', id=c.id) }}" class="text-white ms-2" style="text-decoration: none;">&times;</a></span>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0">
-                    <button type="submit" class="btn btn-primary w-100">Salvar</button>
-                </div>
-            </form>
+            </div>
         </div>
+
     </div>
 </div>
 
-<div class="modal fade" id="modalBanco" tabindex="-1">
+<div class="modal fade" id="modalLancamentoInteligente" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-dark text-white"><h5 class="modal-title">Cadastrar Banco</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('criar_banco') }}" method="POST">
+            <div class="modal-header bg-primary text-white"><h5 class="modal-title">Novo Lançamento</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('lancar_financeiro') }}" method="POST">
                 <div class="modal-body">
-                    <div class="mb-3"><label>Nome do Banco</label><input type="text" name="nome_banco" class="form-control" required></div>
-                    <div class="mb-3"><label>Agência/Conta</label><input type="text" name="agencia_conta" class="form-control"></div>
-                    <div class="mb-3"><label>Saldo Inicial (R$)</label><input type="text" name="saldo_inicial" class="form-control" placeholder="0,00"></div>
-                </div>
-                <div class="modal-footer"><button type="submit" class="btn btn-dark">Salvar</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalAjusteSaldo" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark"><h5 class="modal-title">Ajuste de Conciliação</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('ajuste_saldo_banco') }}" method="POST">
-                <input type="hidden" name="banco_id" value="{{ fc_banco_selecionado }}">
-                <div class="modal-body">
-                    <p class="small text-muted">Use para corrigir o saldo inicial do dia ou diferenças de centavos.</p>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <label class="form-label small">Tipo</label>
+                            <select name="tipo" class="form-select" id="tipoLancamento" onchange="mudarCorModal(this)">
+                                <option value="Receita">Receita</option>
+                                <option value="Despesa">Despesa</option>
+                            </select>
+                        </div>
+                        <div class="col-8"><label class="form-label small">Descrição</label><input type="text" name="descricao" class="form-control" required></div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6"><label class="form-label small">Valor</label><input type="text" name="valor" class="form-control" placeholder="0,00" required></div>
+                        <div class="col-6"><label class="form-label small">1º Vencimento</label><input type="date" name="data_vencimento" class="form-control" required></div>
+                    </div>
                     <div class="mb-3">
-                        <label class="fw-bold">Novo Saldo Atual (R$)</label>
-                        <input type="text" name="novo_saldo" class="form-control" required placeholder="Digite o valor exato que está no banco">
+                        <label class="form-label small">Categoria</label>
+                        <select name="categoria_id" class="form-select">{% for c in todas_categorias %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}</select>
                     </div>
-                    <div class="mb-3"><label>Justificativa</label><input type="text" name="justificativa" class="form-control" required></div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6"><label class="form-label small">Banco</label><select name="banco_id" class="form-select">{% for b in bancos %}<option value="{{ b.id }}">{{ b.nome }}</option>{% endfor %}</select></div>
+                        <div class="col-6"><label class="form-label small">Classificação</label><select name="tipo_custo" class="form-select"><option value="Fixo">Fixo</option><option value="Variavel">Variável</option></select></div>
+                    </div>
+                    <div class="alert alert-light border">
+                        <div class="d-flex align-items-center">
+                            <select name="repetir" class="form-select form-select-sm me-2" style="width: auto;">
+                                <option value="1">1x (Única)</option>
+                                <option value="2">2x</option>
+                                <option value="3">3x</option>
+                                <option value="6">6x</option>
+                                <option value="12">12x</option>
+                            </select>
+                            <div class="form-check form-switch ms-3">
+                                <input class="form-check-input" type="checkbox" name="pago_agora" id="checkPago">
+                                <label class="form-check-label small" for="checkPago">Já pago?</label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer"><button type="submit" class="btn btn-warning w-100">Confirmar Ajuste</button></div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary w-100">Confirmar</button></div>
             </form>
         </div>
     </div>
 </div>
 
+<div class="modal fade" id="modalNovoBanco" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Novo Banco</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form action="{{ url_for('novo_banco') }}" method="POST"><div class="modal-body"><input type="text" name="nome" class="form-control mb-2" placeholder="Nome" required><input type="text" name="saldo_inicial" class="form-control" placeholder="Saldo Inicial (R$)"></div><div class="modal-footer"><button type="submit" class="btn btn-success">Salvar</button></div></form></div></div></div>
+<div class="modal fade" id="modalNovaCategoria" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Nova Categoria</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form action="{{ url_for('nova_categoria') }}" method="POST"><div class="modal-body"><input type="text" name="nome" class="form-control mb-2" placeholder="Nome" required><select name="tipo" class="form-select mb-2"><option value="Receita">Receita</option><option value="Despesa">Despesa</option></select></div><div class="modal-footer"><button type="submit" class="btn btn-primary">Salvar</button></div></form></div></div></div>
+<div class="modal fade" id="modalAjusteSaldo" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Ajuste de Saldo</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form action="{{ url_for('ajuste_saldo_banco') }}" method="POST"><div class="modal-body"><input type="hidden" name="banco_id" value="{{ fc_banco_selecionado }}"><label class="form-label">Saldo Real Hoje</label><input type="text" name="novo_saldo" class="form-control mb-2" required><label class="form-label">Motivo</label><input type="text" name="justificativa" class="form-control"></div><div class="modal-footer"><button type="submit" class="btn btn-warning">Ajustar</button></div></form></div></div></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Configuração dos Modais
+    var modalLancamento = new bootstrap.Modal(document.getElementById('modalLancamentoInteligente'));
+
+    function abrirModalRapido(tipo) {
+        // Define o valor do select interno
+        document.getElementById('tipoLancamento').value = tipo;
+        
+        // Ajusta as cores e título
+        var header = document.querySelector('#modalLancamentoInteligente .modal-header');
+        var title = document.querySelector('#modalLancamentoInteligente .modal-title');
+        
+        if(tipo === 'Receita') {
+            header.className = 'modal-header bg-success text-white';
+            title.innerText = 'Nova Receita';
+        } else {
+            header.className = 'modal-header bg-danger text-white';
+            title.innerText = 'Nova Despesa';
+        }
+        
+        // Abre o modal
+        modalLancamento.show();
+    }
+
+    function mudarCorModal(select) {
+        var header = document.querySelector('#modalLancamentoInteligente .modal-header');
+        if(select.value === 'Receita') header.className = 'modal-header bg-success text-white';
+        else header.className = 'modal-header bg-danger text-white';
+    }
+</script>
 {% endblock %}

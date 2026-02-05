@@ -1,4 +1,8 @@
 import os
+import calendar
+import uuid
+from flask import Flask, render_template
+from datetime import date
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -278,8 +282,16 @@ def registrar_hist_contrato(contrato_id, acao, detalhes, usuario='Sistema'):
         print(f"Erro ao gravar historico contrato: {e}")
 
 
+# ==========================================
+#           NOVO MÓDULO FINANCEIRO
+# ==========================================
 
-# --- NOVOS MODELS FINANCEIROS ---
+class CategoriaFinanceira(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(50), nullable=False)
+    tipo = db.Column(db.String(20)) # 'Receita' ou 'Despesa'
+    cor_etiqueta = db.Column(db.String(20), default='#6c757d')
+
 class Banco(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome_banco = db.Column(db.String(100), nullable=False)
@@ -287,223 +299,38 @@ class Banco(db.Model):
     saldo_inicial = db.Column(db.Float, default=0.0)
     saldo_atual = db.Column(db.Float, default=0.0)
     lancamentos = db.relationship('LancamentoFinanceiro', backref='banco', lazy=True)
+    
+    @property
+    def nome(self): return self.nome_banco # Compatibilidade
 
 class LancamentoFinanceiro(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     descricao = db.Column(db.String(200), nullable=False)
-    tipo = db.Column(db.String(20)) # 'Receita' ou 'Despesa'
-    categoria_custo = db.Column(db.String(20)) # 'Fixo' ou 'Variavel'
     valor = db.Column(db.Float, nullable=False)
-    data_vencimento = db.Column(db.Date)
-    data_pagamento = db.Column(db.Date) # Se null, está pendente
-    pago = db.Column(db.Boolean, default=False)
+    tipo = db.Column(db.String(20))  # 'Receita' ou 'Despesa'
+    
+    # Novos Relacionamentos
+    categoria_id = db.Column(db.Integer, db.ForeignKey('categoria_financeira.id'), nullable=True)
+    categoria = db.relationship('CategoriaFinanceira', backref='lancamentos')
+    
+    tipo_custo = db.Column(db.String(20)) # 'Fixo' ou 'Variavel'
+    
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedor.id'), nullable=True)
+    # O backref 'lancamentos_financeiros' deve estar na classe Fornecedor
+    
     banco_id = db.Column(db.Integer, db.ForeignKey('banco.id'), nullable=True)
-
-
-
-
-  # --- ROTAS FINANCEIRAS ---
-
-@app.route('/financeiro')
-def financeiro():
-    # 1. Configurações Básicas
-    hoje = datetime.now()
-    primeiro_dia_mes = hoje.replace(day=1)
-    # Lógica simples para pegar ultimo dia do mes
-    proximo_mes = hoje.replace(day=28) + timedelta(days=4)
-    ultimo_dia_mes = proximo_mes - timedelta(days=proximo_mes.day)
-
-    # 2. Filtros e Dados Gerais
-    bancos = Banco.query.all()
-    saldo_bancos_total = sum(b.saldo_atual for b in bancos)
     
-    # 3. Dashboard: Totais do Mês (Confirmados)
-    movs_mes = LancamentoFinanceiro.query.filter(
-        LancamentoFinanceiro.data_pagamento >= primeiro_dia_mes,
-        LancamentoFinanceiro.data_pagamento <= ultimo_dia_mes,
-        LancamentoFinanceiro.pago == True
-    ).all()
+    data_vencimento = db.Column(db.Date)
+    data_pagamento = db.Column(db.Date)
+    pago = db.Column(db.Boolean, default=False)
+    forma_pagamento = db.Column(db.String(50))
+    observacao = db.Column(db.Text)
     
-    total_receitas_mes = sum(l.valor for l in movs_mes if l.tipo == 'Receita')
-    total_despesas_mes = sum(l.valor for l in movs_mes if l.tipo == 'Despesa')
-    
-    # 4. Situação do Dia (Saldo Hoje)
-    # Pega tudo que foi pago HOJE
-    movs_hoje = LancamentoFinanceiro.query.filter(
-        extract('day', LancamentoFinanceiro.data_pagamento) == hoje.day,
-        extract('month', LancamentoFinanceiro.data_pagamento) == hoje.month,
-        extract('year', LancamentoFinanceiro.data_pagamento) == hoje.year,
-        LancamentoFinanceiro.pago == True
-    ).all()
-    rec_hoje = sum(l.valor for l in movs_hoje if l.tipo == 'Receita')
-    desp_hoje = sum(l.valor for l in movs_hoje if l.tipo == 'Despesa')
-    saldo_dia_hoje = rec_hoje - desp_hoje # Positivo ou Negativo
+    # Recorrência
+    parcela_atual = db.Column(db.Integer, default=1)
+    total_parcelas = db.Column(db.Integer, default=1)
+    identificador_recorrencia = db.Column(db.String(50))
 
-    # 5. Previsão Fim de Mês
-    # Pega pendentes até o fim do mês
-    pendentes = LancamentoFinanceiro.query.filter(
-        LancamentoFinanceiro.data_vencimento <= ultimo_dia_mes,
-        LancamentoFinanceiro.pago == False
-    ).all()
-    pendente_receita = sum(l.valor for l in pendentes if l.tipo == 'Receita')
-    pendente_despesa = sum(l.valor for l in pendentes if l.tipo == 'Despesa')
-    
-    saldo_projetado = saldo_bancos_total + pendente_receita - pendente_despesa
-
-    # 6. Relatório Filtrado (Fixo/Variavel)
-    filtro_tipo = request.args.get('filtro_tipo_custo', 'Todos')
-    query_rel = LancamentoFinanceiro.query.filter(LancamentoFinanceiro.tipo == 'Despesa')
-    if filtro_tipo != 'Todos':
-        query_rel = query_rel.filter(LancamentoFinanceiro.categoria_custo == filtro_tipo)
-    relatorio_despesas = query_rel.order_by(LancamentoFinanceiro.data_vencimento).limit(50).all()
-
-    # 7. Lógica de Fluxo de Caixa (Conciliação)
-    fc_banco_id = request.args.get('fc_banco_id')
-    fc_banco_selecionado = int(fc_banco_id) if fc_banco_id else (bancos[0].id if bancos else None)
-    fc_data_ini = request.args.get('fc_data_ini', primeiro_dia_mes.strftime('%Y-%m-%d'))
-    fc_data_fim = request.args.get('fc_data_fim', ultimo_dia_mes.strftime('%Y-%m-%d'))
-    
-    fc_extrato = []
-    fc_banco_obj = None
-    fc_saldo_anterior = 0
-    fc_total_receitas = 0
-    fc_total_despesas = 0
-
-    if fc_banco_selecionado:
-        fc_banco_obj = Banco.query.get(fc_banco_selecionado)
-        
-        # Extrato do Período
-        d_ini = datetime.strptime(fc_data_ini, '%Y-%m-%d')
-        d_fim = datetime.strptime(fc_data_fim, '%Y-%m-%d')
-        
-        fc_extrato = LancamentoFinanceiro.query.filter(
-            LancamentoFinanceiro.banco_id == fc_banco_selecionado,
-            LancamentoFinanceiro.pago == True,
-            LancamentoFinanceiro.data_pagamento >= d_ini,
-            LancamentoFinanceiro.data_pagamento <= d_fim
-        ).order_by(LancamentoFinanceiro.data_pagamento).all()
-        
-        # Totais do período
-        fc_total_receitas = sum(l.valor for l in fc_extrato if l.tipo == 'Receita')
-        fc_total_despesas = sum(l.valor for l in fc_extrato if l.tipo == 'Despesa')
-        
-        # Cálculo aproximado do saldo anterior (Backwards calculation)
-        # Saldo Anterior = Saldo Atual - (Receitas Período - Despesas Período) - (Movs Futuras...)
-        # Simplificação: Para conciliação exata, o ideal é ter tabela de fechamento diário.
-        # Aqui usaremos a lógica: Saldo Anterior = (Saldo Atual) - (Tudo que aconteceu DEPOIS da data ini)
-        # Mas para simplificar a visualização imediata pedida:
-        fc_saldo_anterior = fc_banco_obj.saldo_atual - (fc_total_receitas - fc_total_despesas)
-
-    return render_template('financeiro.html',
-                           hoje=hoje,
-                           bancos=bancos,
-                           saldo_bancos_total=saldo_bancos_total,
-                           total_receitas_mes=total_receitas_mes,
-                           total_despesas_mes=total_despesas_mes,
-                           saldo_dia_hoje=saldo_dia_hoje,
-                           pendente_receita=pendente_receita,
-                           pendente_despesa=pendente_despesa,
-                           saldo_projetado=saldo_projetado,
-                           relatorio_despesas=relatorio_despesas,
-                           filtro_tipo_custo=filtro_tipo,
-                           lancamentos_todos=LancamentoFinanceiro.query.order_by(LancamentoFinanceiro.data_vencimento.desc()).limit(20).all(),
-                           fc_banco_selecionado=fc_banco_selecionado,
-                           fc_banco_obj=fc_banco_obj,
-                           fc_data_ini=fc_data_ini,
-                           fc_data_fim=fc_data_fim,
-                           fc_extrato=fc_extrato,
-                           fc_saldo_anterior=fc_saldo_anterior,
-                           fc_total_receitas=fc_total_receitas,
-                           fc_total_despesas=fc_total_despesas)
-
-@app.route('/criar_banco', methods=['POST'])
-def criar_banco():
-    nome = request.form.get('nome_banco')
-    agencia = request.form.get('agencia_conta')
-    saldo_ini = limpar_float(request.form.get('saldo_inicial'))
-    
-    novo = Banco(nome_banco=nome, agencia_conta=agencia, saldo_inicial=saldo_ini, saldo_atual=saldo_ini)
-    db.session.add(novo)
-    db.session.commit()
-    flash('Banco cadastrado com sucesso.')
-    return redirect(url_for('financeiro', tab_ativa='tab-bancos'))
-
-@app.route('/novo_lancamento', methods=['POST'])
-def novo_lancamento():
-    try:
-        desc = request.form.get('descricao')
-        tipo = request.form.get('tipo')
-        cat = request.form.get('categoria_custo')
-        valor = limpar_float(request.form.get('valor'))
-        banco_id = int(request.form.get('banco_id'))
-        venc = datetime.strptime(request.form.get('data_vencimento'), '%Y-%m-%d')
-        status = request.form.get('status')
-        
-        pago = (status == 'Pago')
-        data_pgto = datetime.now() if pago else None
-        
-        novo = LancamentoFinanceiro(descricao=desc, tipo=tipo, categoria_custo=cat, valor=valor, 
-                                    data_vencimento=venc, banco_id=banco_id, pago=pago, data_pagamento=data_pgto)
-        
-        if pago:
-            banco = Banco.query.get(banco_id)
-            if tipo == 'Receita': banco.saldo_atual += valor
-            else: banco.saldo_atual -= valor
-            
-        db.session.add(novo)
-        db.session.commit()
-        flash('Lançamento registrado.')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro: {e}')
-    return redirect(url_for('financeiro'))
-
-@app.route('/baixa_lancamento', methods=['POST'])
-def baixa_lancamento():
-    id_lanc = request.form.get('id')
-    lanc = LancamentoFinanceiro.query.get(id_lanc)
-    if lanc and not lanc.pago:
-        lanc.pago = True
-        lanc.data_pagamento = datetime.now()
-        
-        banco = Banco.query.get(lanc.banco_id)
-        if lanc.tipo == 'Receita': banco.saldo_atual += lanc.valor
-        else: banco.saldo_atual -= lanc.valor
-        
-        db.session.commit()
-        flash('Baixa realizada com sucesso.')
-    return redirect(url_for('financeiro'))
-
-@app.route('/ajuste_saldo_banco', methods=['POST'])
-def ajuste_saldo_banco():
-    banco_id = request.form.get('banco_id')
-    novo_saldo = limpar_float(request.form.get('novo_saldo'))
-    justificativa = request.form.get('justificativa')
-    
-    banco = Banco.query.get(banco_id)
-    diferenca = novo_saldo - banco.saldo_atual
-    
-    if diferenca != 0:
-        tipo = 'Receita' if diferenca > 0 else 'Despesa'
-        valor_ajuste = abs(diferenca)
-        
-        # Cria um lançamento automático de ajuste
-        ajuste = LancamentoFinanceiro(
-            descricao=f"Ajuste Manual: {justificativa}",
-            tipo=tipo,
-            categoria_custo='Variavel',
-            valor=valor_ajuste,
-            data_vencimento=datetime.now(),
-            data_pagamento=datetime.now(),
-            pago=True,
-            banco_id=banco.id
-        )
-        banco.saldo_atual = novo_saldo
-        db.session.add(ajuste)
-        db.session.commit()
-        flash('Saldo ajustado com sucesso.')
-        
-    return redirect(url_for('financeiro', fc_banco_id=banco_id, tab_ativa='tab-caixa'))  
 
 
 
@@ -512,9 +339,13 @@ def ajuste_saldo_banco():
 # --- CONTEXTO ---
 @app.template_filter('currency')
 def currency_filter(value):
-    if value is None: value = 0
-    return "R$ {:,.2f}".format(value).replace(",", "X").replace(".", ",").replace("X", ".")
-
+    try:
+        if value is None: return "R$ 0,00"
+        val = float(value)
+        return "R$ {:,.2f}".format(val).replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return "R$ 0,00"
+    
 @app.template_filter('formata_codigo')
 def formata_codigo(id): return f"P{id:03d}"
 
@@ -785,41 +616,62 @@ def cancelar_movimentacao():
 @app.route('/nova_venda', methods=['POST'])
 def nova_venda():
     try:
-        cliente_id = int(request.form['cliente_id'])
-        forma_pagamento = request.form['forma_pagamento']
-        vencimento_str = request.form.get('data_vencimento')
-        data_vencimento = datetime.strptime(vencimento_str, '%Y-%m-%d').date() if vencimento_str else None
-        status_boleto = 'Falta Boleto' if forma_pagamento == 'BOLETO' else None
-        nova_venda = Venda(cliente_id=cliente_id, forma_pagamento=forma_pagamento, data_vencimento=data_vencimento, status_pagamento='Pendente', status_nf='Falta NF', status_boleto=status_boleto, status_envio='Falta Enviar', status_geral='Ativa', observacao=request.form.get('observacao'))
-        db.session.add(nova_venda)
+        # Cria a Venda
+        v = Venda(
+            cliente_id=int(request.form['cliente_id']), 
+            forma_pagamento=request.form['forma_pagamento'], 
+            data_vencimento=datetime.strptime(request.form['data_vencimento'], '%Y-%m-%d') if request.form.get('data_vencimento') else None,
+            status_pagamento='Pendente', 
+            status_geral='Ativa', 
+            observacao=request.form.get('observacao')
+        )
+        db.session.add(v)
+        db.session.commit() # Commita para gerar o ID da venda
+        
+        tot = 0
+        # Processa os Itens
+        for p_id, q, val in zip(request.form.getlist('produtos[]'), request.form.getlist('quantidades[]'), request.form.getlist('valores[]')):
+            if p_id:
+                prod = Produto.query.get(int(p_id))
+                if prod.quantidade >= int(q):
+                    prod.quantidade -= int(q)
+                    vt = int(q) * limpar_float(val)
+                    tot += vt
+                    db.session.add(ItemVenda(venda_id=v.id, produto_id=int(p_id), quantidade=int(q), valor_unitario=limpar_float(val), valor_total=vt))
+                    # Movimentação de Estoque
+                    db.session.add(Movimentacao(produto_id=int(p_id), tipo='Venda', quantidade=int(q), destino_origem=v.cliente.nome, numero_documento=f"V-{v.id}"))
+        
+        v.valor_total = tot
+        
+        # --- [NOVO] INTEGRAÇÃO FINANCEIRA AUTOMÁTICA ---
+        # Tenta achar a categoria 'Vendas' (ou cria se não existir)
+        cat = CategoriaFinanceira.query.filter_by(nome='Vendas').first()
+        banco = Banco.query.first() # Pega o primeiro banco padrão
+        
+        lanc = LancamentoFinanceiro(
+            descricao=f"Venda #{v.id} - {v.cliente.nome}", 
+            valor=tot, 
+            tipo='Receita', 
+            categoria_id=cat.id if cat else None,
+            tipo_custo='Variavel',
+            banco_id=banco.id if banco else None, 
+            data_vencimento=v.data_vencimento or datetime.now().date(),
+            pago=False, # Entra como pendente
+            observacao="Lançamento automático via Módulo de Vendas"
+        )
+        db.session.add(lanc)
+        # ------------------------------------------------
+        
         db.session.commit()
-        produtos_ids = request.form.getlist('produtos[]')
-        quantidades = request.form.getlist('quantidades[]')
-        valores = request.form.getlist('valores[]')
-        valor_total_venda = 0
-        for p_id, qtd, val in zip(produtos_ids, quantidades, valores):
-            if not p_id: continue
-            qtd = int(qtd)
-            valor_unit = limpar_float(val)
-            valor_item_total = qtd * valor_unit
-            produto = Produto.query.get(int(p_id))
-            if produto.quantidade < qtd:
-                db.session.rollback()
-                flash(f'Erro: Estoque insuficiente para {produto.nome}.')
-                return redirect(url_for('vendas'))
-            produto.quantidade -= qtd
-            item = ItemVenda(venda_id=nova_venda.id, produto_id=produto.id, quantidade=qtd, valor_unitario=valor_unit, valor_total=valor_item_total)
-            db.session.add(item)
-            mov = Movimentacao(produto_id=produto.id, tipo='Venda', categoria_movimento='Venda', numero_documento=f"V-{nova_venda.id}", quantidade=qtd, destino_origem=nova_venda.cliente.nome, observacao=f"Venda #{nova_venda.id}")
-            db.session.add(mov)
-            valor_total_venda += valor_item_total
-        nova_venda.valor_total = valor_total_venda
-        registrar_log('Nova Venda', f'Venda #{nova_venda.id} criada.')
-        db.session.commit()
-    except Exception as e:
+        flash('Venda realizada e lançada no financeiro com sucesso!', 'success')
+        
+    except Exception as e: 
         db.session.rollback()
-        print(e)
+        print(f"Erro Venda: {e}")
+        flash('Erro ao registrar venda.', 'danger')
+        
     return redirect(url_for('vendas'))
+
 
 @app.route('/atualizar_venda', methods=['POST'])
 def atualizar_venda():
@@ -852,6 +704,54 @@ def atualizar_venda():
     if status_envio: venda.status_envio = status_envio
     db.session.commit()
     return redirect(url_for('vendas'))
+
+@app.route('/receber_pedido_compra/<int:id>')
+def receber_pedido_compra(id):
+    p = PedidoCompra.query.get(id)
+    if p and p.status != 'Entregue':
+        p.status = 'Entregue'
+        
+        # Atualiza Estoque (Entrada dos itens)
+        for i in p.itens:
+            if i.produto_id:
+                prod = Produto.query.get(i.produto_id)
+                prod.quantidade += i.quantidade
+                db.session.add(Movimentacao(
+                    produto_id=prod.id, 
+                    tipo='Entrada', 
+                    quantidade=i.quantidade, 
+                    destino_origem=p.fornecedor.nome, 
+                    observacao=f"Recebimento Pedido Compra #{p.id}"
+                ))
+        
+        # --- [NOVO] INTEGRAÇÃO FINANCEIRA AUTOMÁTICA ---
+        cat = CategoriaFinanceira.query.filter_by(nome='Insumos').first()
+        banco = Banco.query.first()
+        
+        # Define vencimento (se não tiver data entrega, usa data de hoje + 30 dias como padrão)
+        data_venc = p.data_entrega_prevista if p.data_entrega_prevista else (datetime.now().date() + timedelta(days=30))
+        
+        lanc = LancamentoFinanceiro(
+            descricao=f"Compra #{p.id} - {p.fornecedor.nome}", 
+            valor=p.valor_total, 
+            tipo='Despesa', 
+            categoria_id=cat.id if cat else None, 
+            tipo_custo='Variavel',
+            fornecedor_id=p.fornecedor_id,
+            banco_id=banco.id if banco else None, 
+            data_vencimento=data_venc,
+            pago=False,
+            observacao="Lançamento automático via Recebimento de Compras"
+        )
+        db.session.add(lanc)
+        # ------------------------------------------------
+        
+        db.session.commit()
+        flash('Itens adicionados ao estoque e Despesa lançada no financeiro.', 'success')
+        
+    return redirect(url_for('fornecedores'))
+
+
 
 @app.route('/criar_produto', methods=['POST'])
 def criar_produto():
@@ -1826,6 +1726,237 @@ def imprimir_contrato_view(id):
         custo_nome = item.franquia_pai.nome if item.franquia_pai else None
         dados_itens.append({'modelo': item.impressora.modelo, 'serial': item.impressora.serial, 'data_inclusao': data_add, 'custo_nome': custo_nome, 'valor': item.valor_locacao_unitario})
     return render_template('imprimir_contrato.html', contrato=contrato, dados_itens=dados_itens, hoje=datetime.now().strftime('%d/%m/%Y %H:%M'))
+
+
+# ==========================================
+#           MÓDULO FINANCEIRO NOVO
+# ==========================================
+
+@app.route('/financeiro')
+def financeiro():
+    hoje = datetime.now()
+    primeiro_dia_mes = hoje.replace(day=1)
+    proximo_mes = hoje.replace(day=28) + timedelta(days=4)
+    ultimo_dia_mes = proximo_mes - timedelta(days=proximo_mes.day)
+    
+    # 1. Garante Categorias Padrão
+    if CategoriaFinanceira.query.count() == 0:
+        cats = [('Vendas', 'Receita', '#10b981'), ('Serviços', 'Receita', '#3b82f6'), 
+                ('Insumos', 'Despesa', '#ef4444'), ('Aluguel', 'Despesa', '#f59e0b'), 
+                ('Pessoal', 'Despesa', '#8b5cf6'), ('Impostos', 'Despesa', '#64748b'), 
+                ('Administrativo', 'Despesa', '#ec4899')]
+        for n, t, c in cats: db.session.add(CategoriaFinanceira(nome=n, tipo=t, cor_etiqueta=c))
+        db.session.commit()
+
+    # 2. Atualiza Saldos Bancários Reais
+    bancos = Banco.query.all()
+    for b in bancos:
+        ent = db.session.query(func.sum(LancamentoFinanceiro.valor)).filter_by(banco_id=b.id, tipo='Receita', pago=True).scalar() or 0
+        sai = db.session.query(func.sum(LancamentoFinanceiro.valor)).filter_by(banco_id=b.id, tipo='Despesa', pago=True).scalar() or 0
+        b.saldo_atual = b.saldo_inicial + ent - sai
+    saldo_bancos_total = sum(b.saldo_atual for b in bancos)
+
+    # 3. Previsões (A Receber / A Pagar neste mês)
+    pendentes_mes = LancamentoFinanceiro.query.filter(
+        LancamentoFinanceiro.data_vencimento <= ultimo_dia_mes,
+        LancamentoFinanceiro.pago == False
+    ).all()
+    pendente_receita = sum(l.valor for l in pendentes_mes if l.tipo == 'Receita')
+    pendente_despesa = sum(l.valor for l in pendentes_mes if l.tipo == 'Despesa')
+    saldo_projetado = saldo_bancos_total + pendente_receita - pendente_despesa
+
+    # 4. Dados para Tabela de Lançamentos
+    query = LancamentoFinanceiro.query
+    if request.args.get('data_inicio'): 
+        query = query.filter(LancamentoFinanceiro.data_vencimento.between(
+            datetime.strptime(request.args.get('data_inicio'), '%Y-%m-%d'), 
+            datetime.strptime(request.args.get('data_fim'), '%Y-%m-%d')))
+    else: 
+        query = query.filter(LancamentoFinanceiro.data_vencimento >= primeiro_dia_mes)
+    
+    if request.args.get('categoria_id') and request.args.get('categoria_id') != 'Todas': 
+        query = query.filter(LancamentoFinanceiro.categoria_id == int(request.args.get('categoria_id')))
+    
+    if request.args.get('status') == 'Pago': query = query.filter(LancamentoFinanceiro.pago == True)
+    elif request.args.get('status') == 'Aberto': query = query.filter(LancamentoFinanceiro.pago == False)
+
+    lancamentos_todos = query.order_by(LancamentoFinanceiro.data_vencimento.asc()).all()
+
+    # 5. Dados para Fluxo de Caixa (Conciliação)
+    fc_banco_id = request.args.get('fc_banco_id')
+    fc_banco_selecionado = int(fc_banco_id) if fc_banco_id else (bancos[0].id if bancos else 0)
+    fc_banco_obj = Banco.query.get(fc_banco_selecionado) if fc_banco_selecionado else None
+    
+    fc_extrato = []
+    fc_saldo_anterior = 0
+    fc_total_receitas = 0
+    fc_total_despesas = 0
+    fc_data_ini = request.args.get('fc_data_ini', primeiro_dia_mes.strftime('%Y-%m-%d'))
+    fc_data_fim = request.args.get('fc_data_fim', ultimo_dia_mes.strftime('%Y-%m-%d'))
+
+    if fc_banco_obj:
+        fc_extrato = LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.banco_id == fc_banco_selecionado,
+            LancamentoFinanceiro.pago == True,
+            LancamentoFinanceiro.data_pagamento >= datetime.strptime(fc_data_ini, '%Y-%m-%d'),
+            LancamentoFinanceiro.data_pagamento <= datetime.strptime(fc_data_fim, '%Y-%m-%d')
+        ).order_by(LancamentoFinanceiro.data_pagamento).all()
+        
+        fc_total_receitas = sum(l.valor for l in fc_extrato if l.tipo == 'Receita')
+        fc_total_despesas = sum(l.valor for l in fc_extrato if l.tipo == 'Despesa')
+        fc_saldo_anterior = fc_banco_obj.saldo_atual - (fc_total_receitas - fc_total_despesas)
+
+    # 6. Relatório
+    relatorio_despesas = LancamentoFinanceiro.query.filter(LancamentoFinanceiro.tipo=='Despesa').order_by(LancamentoFinanceiro.data_vencimento.desc()).limit(50).all()
+
+    return render_template('financeiro.html', 
+                           hoje=hoje,
+                           lancamentos_todos=lancamentos_todos,
+                           saldo_bancos_total=saldo_bancos_total,
+                           pendente_receita=pendente_receita,
+                           pendente_despesa=pendente_despesa,
+                           saldo_projetado=saldo_projetado,
+                           bancos=bancos,
+                           todas_categorias=CategoriaFinanceira.query.order_by(CategoriaFinanceira.nome).all(),
+                           fornecedores=Fornecedor.query.order_by(Fornecedor.nome).all(),
+                           fc_banco_selecionado=fc_banco_selecionado,
+                           fc_banco_obj=fc_banco_obj,
+                           fc_extrato=fc_extrato,
+                           fc_saldo_anterior=fc_saldo_anterior,
+                           fc_total_receitas=fc_total_receitas,
+                           fc_total_despesas=fc_total_despesas,
+                           fc_data_ini=fc_data_ini,
+                           fc_data_fim=fc_data_fim,
+                           relatorio_despesas=relatorio_despesas,
+                           filtro_tipo_custo=request.args.get('filtro_tipo_custo', 'Todos'))
+
+@app.route('/nova_categoria', methods=['POST'])
+def nova_categoria():
+    if request.form.get('nome'):
+        db.session.add(CategoriaFinanceira(nome=request.form.get('nome'), tipo=request.form.get('tipo'), cor_etiqueta=request.form.get('cor', '#6c757d')))
+        db.session.commit()
+    return redirect(url_for('financeiro'))
+
+@app.route('/excluir_categoria/<int:id>')
+def excluir_categoria(id):
+    c = CategoriaFinanceira.query.get(id)
+    if c and not c.lancamentos:
+        db.session.delete(c); db.session.commit()
+    return redirect(url_for('financeiro'))
+
+@app.route('/novo_banco', methods=['POST'])
+def novo_banco():
+    if request.form.get('nome'):
+        db.session.add(Banco(nome_banco=request.form.get('nome'), saldo_inicial=limpar_float(request.form.get('saldo_inicial'))))
+        db.session.commit()
+    return redirect(url_for('financeiro'))
+
+@app.route('/ajuste_saldo_banco', methods=['POST'])
+def ajuste_saldo_banco():
+    # ROTA QUE ESTAVA FALTANDO E CAUSAVA O ERRO
+    try:
+        banco_id = request.form.get('banco_id')
+        novo_saldo = limpar_float(request.form.get('novo_saldo'))
+        justificativa = request.form.get('justificativa')
+        
+        banco = Banco.query.get(banco_id)
+        diferenca = novo_saldo - banco.saldo_atual
+        
+        if diferenca != 0:
+            tipo = 'Receita' if diferenca > 0 else 'Despesa'
+            valor_ajuste = abs(diferenca)
+            ajuste = LancamentoFinanceiro(
+                descricao=f"Ajuste Manual: {justificativa}",
+                tipo=tipo,
+                tipo_custo='Variavel',
+                valor=valor_ajuste,
+                data_vencimento=datetime.now(),
+                data_pagamento=datetime.now(),
+                pago=True,
+                banco_id=banco.id,
+                observacao="Ajuste de caixa realizado manualmente"
+            )
+            db.session.add(ajuste)
+            db.session.commit()
+            flash('Saldo ajustado com sucesso.')
+    except Exception as e:
+        flash(f'Erro ao ajustar: {e}')
+    return redirect(url_for('financeiro', tab_ativa='tab-caixa'))
+
+@app.route('/lancar_financeiro', methods=['POST'])
+def lancar_financeiro():
+    try:
+        desc = request.form.get('descricao')
+        val = limpar_float(request.form.get('valor'))
+        dt = datetime.strptime(request.form.get('data_vencimento'), '%Y-%m-%d').date()
+        cat = request.form.get('categoria_id')
+        forn = request.form.get('fornecedor_id')
+        tipo_c = request.form.get('tipo_custo')
+        banco_id = request.form.get('banco_id')
+        
+        rep = int(request.form.get('repetir', 1))
+        pg = 'pago_agora' in request.form
+        ident = str(uuid.uuid4())[:8] if rep > 1 else None
+
+        for i in range(rep):
+            dt_p = add_months(dt, i)
+            d_p = desc if rep == 1 else f"{desc} ({i+1}/{rep})"
+            novo = LancamentoFinanceiro(
+                descricao=d_p, valor=val, tipo=request.form.get('tipo'), 
+                categoria_id=int(cat) if cat else None, tipo_custo=tipo_c, 
+                fornecedor_id=int(forn) if forn else None, banco_id=int(banco_id) if banco_id else None, 
+                data_vencimento=dt_p, pago=pg, 
+                data_pagamento=dt_p if pg else None, 
+                parcela_atual=i+1, total_parcelas=rep, identificador_recorrencia=ident
+            )
+            db.session.add(novo)
+        db.session.commit()
+        flash(f'{rep} lançamento(s) registrado(s).')
+    except Exception as e: print(e)
+    return redirect(url_for('financeiro'))
+
+@app.route('/dar_baixa/<int:id>')
+def dar_baixa(id):
+    l = LancamentoFinanceiro.query.get(id)
+    if l:
+        l.pago = not l.pago
+        l.data_pagamento = datetime.now().date() if l.pago else None
+        db.session.commit()
+    return redirect(url_for('financeiro'))
+
+@app.route('/excluir_lancamento/<int:id>')
+def excluir_lancamento(id):
+    l = LancamentoFinanceiro.query.get(id)
+    if l: db.session.delete(l); db.session.commit()
+    return redirect(url_for('financeiro'))
+
+@app.route('/imprimir_fluxo')
+def imprimir_fluxo():
+    di = request.args.get('data_inicio')
+    df = request.args.get('data_fim')
+    if not di or not df: return redirect(url_for('financeiro'))
+    movs = LancamentoFinanceiro.query.filter(LancamentoFinanceiro.pago == True, LancamentoFinanceiro.data_pagamento.between(datetime.strptime(di, '%Y-%m-%d'), datetime.strptime(df, '%Y-%m-%d'))).order_by(LancamentoFinanceiro.data_pagamento).all()
+    ent = sum(m.valor for m in movs if m.tipo == 'Receita')
+    sai = sum(m.valor for m in movs if m.tipo == 'Despesa')
+    return render_template('print_fluxo.html', movs=movs, inicio=datetime.strptime(di, '%Y-%m-%d'), fim=datetime.strptime(df, '%Y-%m-%d'), total_ent=ent, total_sai=sai, saldo_periodo=ent-sai)
+
+# Compatibilidade
+@app.route('/nova_receita', methods=['POST'])
+def nova_receita(): return lancar_financeiro()
+@app.route('/nova_despesa', methods=['POST'])
+def nova_despesa(): return lancar_financeiro()
+
+
+
+
+
+
+
+
+
+
+
+
 
 def verificar_migracoes():
     with app.app_context():

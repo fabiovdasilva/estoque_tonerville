@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Fluxo de Caixa</title>
+    <style>
+        body { font-family: 'Helvetica', sans-serif; padding: 40px; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+        .info { margin-bottom: 20px; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 0.85rem; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .text-end { text-align: right; }
+        .entrada { color: green; }
+        .saida { color: red; }
+        .resumo { display: flex; justify-content: space-between; margin-top: 30px; border-top: 2px solid #333; padding-top: 20px; }
+        .box { text-align: center; border: 1px solid #ddd; padding: 15px; width: 30%; border-radius: 8px; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <button class="no-print" onclick="window.print()" style="padding: 10px 20px; cursor: pointer; margin-bottom: 20px;">🖨️ Imprimir / Salvar PDF</button>
+    
+    <div class="header">
+        <h1>Fluxo de Caixa (Realizado)</h1>
+        <p>Período: {{ inicio.strftime('%d/%m/%Y') }} até {{ fim.strftime('%d/%m/%Y') }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Data Pagto</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Tipo Custo</th>
+                <th>Fornecedor</th>
+                <th class="text-end">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in movs %}
+            <tr>
+                <td>{{ m.data_pagamento.strftime('%d/%m/%Y') }}</td>
+                <td>{{ m.descricao }}</td>
+                <td>{{ m.categoria }}</td>
+                <td>{{ m.tipo_custo or '-' }}</td>
+                <td>{{ m.fornecedor.nome if m.fornecedor else '-' }}</td>
+                <td class="text-end {% if m.tipo == 'Receita' %}entrada{% else %}saida{% endif %}">
+                    {{ "-" if m.tipo == 'Despesa' else "+" }} {{ m.valor | currency }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="resumo">
+        <div class="box">
+            <small>Total Entradas</small>
+            <h3 style="color: green">{{ total_ent | currency }}</h3>
+        </div>
+        <div class="box">
+            <small>Total Saídas</small>
+            <h3 style="color: red">{{ total_sai | currency }}</h3>
+        </div>
+        <div class="box" style="background: #f9f9f9;">
+            <small>Resultado do Período</small>
+            <h3 style="color: {% if saldo_periodo >= 0 %}blue{% else %}red{% endif %}">
+                {{ saldo_periodo | currency }}
+            </h3>
+            <small style="display:block; font-size: 0.7rem; color: #666; margin-top:5px;">(Não inclui saldo anterior)</small>
+        </div>
+    </div>
+</body>
+</html>
